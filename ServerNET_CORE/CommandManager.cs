@@ -37,27 +37,7 @@ namespace ServerKMP
             commands.Add("gamemode", (args) =>
             {
                 if (args.Length != 2) Console.WriteLine("gamemode [mode] - change gamemode to [mode]");
-                else
-                {
-                    GamemodeManager.SafeCall(GamemodeManager.currentGamemode!.OnStop);
-                    if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "Gamemodes", args[1] + ".dll")))
-                    {
-                        Console.WriteLine("[ERROR] Couldn't find gamemode " + args[1] + ".dll");
-                        return;
-                    }
-                    var asm = AppDomain.CurrentDomain.Load(File.ReadAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "Gamemodes", args[1] + ".dll")));
-                    var type = asm.GetTypes().Where(x => x.BaseType == typeof(GamemodeApi.Gamemode)).FirstOrDefault();
-                    if (type == null)
-                    {
-                        Console.WriteLine("[ERROR] Couldn't find gamemode entrypoint");
-                        return;
-                    }
-                    GamemodeManager.currentGamemode = (GamemodeApi.Gamemode)Activator.CreateInstance(type, null)!;
-                    GamemodeManager.SafeCall(GamemodeManager.currentGamemode!.OnStart);
-                    // re-handshake all players to gamemode
-                    foreach (var i in NetworkManager.registeredOnGamemode)
-                        GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new GamemodeApi.MessageClientToServer.MessageHandshake(i, NetworkManager.usernameDatabase[i])));
-                }
+                else GamemodeManager.LoadGamemode(args[1]);
             });
 
             commands.Add("cmds", (_) =>
@@ -77,3 +57,4 @@ namespace ServerKMP
         }
     }
 }
+

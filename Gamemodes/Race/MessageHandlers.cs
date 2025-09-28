@@ -200,6 +200,13 @@ namespace Race
                     else
                         MapManager.LoadMap(args[1]);
                 }
+                if (args[0] == "!gamemode") // maybe giving a bit too much power to admin here? unsure
+                {
+                    if (args.Length == 1)
+                        new MessageServerToClient.MessageChatMessage("Usage: !gamemode <gamemode>").Send(chat.fromId);
+                    else
+                        GamemodeManager.LoadGamemode(args[1]);
+                }
                 if (args[0] == "!kick")
                 {
                     if (args.Length != 2)
