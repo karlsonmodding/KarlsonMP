@@ -114,7 +114,7 @@ namespace KarlsonMP
             message
                 .Add(PlayerMovement.Instance.transform.position)
                 .Add(new Vector2(Camera.main.transform.rotation.eulerAngles.x, Camera.main.transform.rotation.eulerAngles.y))
-                .Add(PlayerMovement.Instance.IsCrouching())
+                .Add(CrouchFixes.IsCrouching())
                 .Add(PlayerMovement.Instance.rb.velocity.sqrMagnitude > 1f)
                 .Add(PlayerMovement.Instance.grounded);
             NetworkManager.client.Send(message);
@@ -123,6 +123,8 @@ namespace KarlsonMP
         public static void RequestScene()
         {
             NetworkManager.client.Send(Message.Create(MessageSendMode.Reliable, Packet_C2S.requestScene));
+            // run autoexec
+            KMP_Console.Autoexec();
         }
 
         public static void Shoot(Vector3 from, Vector3 to)
@@ -517,6 +519,9 @@ namespace KarlsonMP
                         break;
                     case "NametagDistance":
                         PlaytimeLogic.nametagDistance = float.Parse(value);
+                        break;
+                    case "ShowDamage":
+                        Inventory.gamerule_ShowDamage = value == "1";
                         break;
                 }
             }

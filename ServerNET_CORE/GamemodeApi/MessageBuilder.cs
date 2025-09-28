@@ -546,8 +546,18 @@ namespace ServerKMP.GamemodeApi
         {
             public static class Rules
             {
+                /// <summary>
+                /// Enable or disable Crouch Fixes (mainly double crouch exploit)
+                /// </summary>
                 public const string CrouchFixes = "CrouchFixes";
+                /// <summary>
+                /// Set distance from which nametags should be visible
+                /// </summary>
                 public const string NametagDistance = "NametagDistance";
+                /// <summary>
+                /// Enable damage logging on the client
+                /// </summary>
+                public const string ShowDamage = "ShowDamage";
             }
 
             List<(string, string)> rules;

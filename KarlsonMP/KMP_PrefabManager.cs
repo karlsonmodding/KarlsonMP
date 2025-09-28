@@ -156,6 +156,15 @@ namespace KarlsonMP
             return _glass;
         }
 
+        public static GameObject crosshair;
+        public static GameObject NewCrosshair()
+        {
+            GameObject _crosshair = UnityEngine.Object.Instantiate(crosshair);
+            _crosshair.name = "Crosshair #" + UnityEngine.Random.Range(0, 32767);
+            _crosshair.SetActive(true);
+            return _crosshair;
+        }
+
         private static bool _init = false;
         public static void Init()
         {
@@ -294,6 +303,7 @@ namespace KarlsonMP
                     }
                 }
             }
+            crosshair = UnityEngine.Object.Instantiate(GameObject.Find("Managers (1)/UI/Game/Crosshair"));
         }
     }
 }

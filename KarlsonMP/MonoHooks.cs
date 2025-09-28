@@ -47,6 +47,7 @@ namespace KarlsonMP
             PlaytimeLogic.Update();
             Inventory.Update();
             Scoreboard.Update();
+            KMP_Console.OnUpdate();
         }
 
         public void OnGUI()

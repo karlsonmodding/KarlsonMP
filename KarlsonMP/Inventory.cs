@@ -52,7 +52,7 @@ namespace KarlsonMP
         }
 
         private static GameObject deagle, ak47, shotgun;
-
+        public static bool ShowDamage = true, gamerule_ShowDamage = true;
         public static void Shoot(Transform ___guntip)
         {
             if (weapons.Count == 0) return;
@@ -87,7 +87,8 @@ namespace KarlsonMP
                 foreach(var x in damage)
                 {
                     ClientSend.Damage(x.Key, (int)Mathf.Floor(x.Value + 0.5f));
-                    KillFeedGUI.DamageReport(((int)Mathf.Floor(x.Value + 0.5f)).ToString());
+                    if(ShowDamage && gamerule_ShowDamage)
+                        KillFeedGUI.DamageReport(((int)Mathf.Floor(x.Value + 0.5f)).ToString());
                 }
             }
             if (weapons[CurrentWeapon].Magazine == 0)
@@ -98,15 +99,27 @@ namespace KarlsonMP
             }
         }
 
+        public static bool EnableHitmarker = true;
+
         private static void Hitmarker()
         {
             KMP_AudioManager.PlaySound("hitmarker", 0.15f);
+            if (!EnableHitmarker) return;
             GameObject crosshair = GameObject.Find("Managers (1)/UI/Game/Crosshair");
             GameObject hitmarker = UnityEngine.Object.Instantiate(crosshair);
             hitmarker.transform.SetParent(crosshair.transform.parent);
             hitmarker.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
             hitmarker.transform.localPosition = Vector3.zero;
             hitmarker.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            // original crosshair settings for hitmarker
+            for(int i = 0; i < 4; ++i)
+            {
+                hitmarker.transform.GetChild(i).localScale = new Vector3(0.0406f, 0.015f, 0.0336f);
+                if (i <= 1)
+                    hitmarker.transform.GetChild(i).localPosition = new Vector3((2 * i - 1) * 4.0635f, 0f, 0f);
+                else
+                    hitmarker.transform.GetChild(i).localPosition = new Vector3(0f, (2 * (2 - i) + 1) * 4.0635f, 0f);
+            }
             System.Collections.IEnumerator fadeHitmarker()
             {
                 var imgs = hitmarker.GetComponentsInChildren<Image>();

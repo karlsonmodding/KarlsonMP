@@ -74,6 +74,58 @@ namespace KarlsonMP
             {
                 PlaytimeLogic.ClearChat();
             });
+            KMP_Console.commands.Add("say", (args) =>
+            {
+                if (args.Length <= 1)
+                {
+                    KMP_Console.Log("say <text>", true);
+                    return;
+                }
+                ClientSend.ChatMessage(string.Join(" ", args.Skip(1)));
+            });
+            KMP_Console.commands.Add("bind", (args) =>
+            {
+                if (args.Length <= 1)
+                {
+                    KMP_Console.Log("<color=yellow>bind [key] [command]</color> OR <color=yellow>bind [key]</color> to remove a bind", true);
+                    return;
+                }
+                if (KMP_Console.binds.ContainsKey(args[1]))
+                    KMP_Console.binds.Remove(args[1]);
+                if(args.Length > 2)
+                    KMP_Console.binds.Add(args[1], string.Join(" ", args.Skip(2)));
+            });
+
+            KMP_Console.commands.Add("show", (args) =>
+            {
+                if(args.Length != 3)
+                {
+                    KMP_Console.Log("show [fps|speed] [0|1]", true);
+                    return;
+                }
+                if (args[1] == "fps")
+                    UnityEngine.Object.FindObjectOfType<Debug>().ReflectionSet("fpsOn", args[2] == "1");
+                if (args[1] == "speed")
+                    UnityEngine.Object.FindObjectOfType<Debug>().ReflectionSet("speedOn", args[2] == "1");
+            });
+            KMP_Console.commands.Add("crosshair", (args) =>
+            {
+                if(args.Length != 3)
+                {
+                    KMP_Console.Log("crosshair [len|gap|thick|hitmarker|damage] [value]");
+                    return;
+                }
+                if (args[1] == "len")
+                    PlaytimeLogic.Crosshair.SetLen(float.Parse(args[2]));
+                if (args[1] == "gap")
+                    PlaytimeLogic.Crosshair.SetGap(float.Parse(args[2]));
+                if (args[1] == "thick")
+                    PlaytimeLogic.Crosshair.SetThick(float.Parse(args[2]));
+                if (args[1] == "hitmarker")
+                    Inventory.EnableHitmarker = args[2] == "1";
+                if (args[1] == "damage")
+                    Inventory.ShowDamage = args[2] == "1";
+            });
 
             // convars
             KMP_Console.convars.Add("cl_interp", KEngine.cl_interp);

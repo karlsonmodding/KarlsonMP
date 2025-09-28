@@ -250,6 +250,25 @@ namespace KarlsonMP
                 PlayerMovement.Instance.ReflectionInvoke("StopCrouch");
             ___crouching = crouching;
         }
+
+        public static bool IsCrouching()
+        {
+            if (Enabled) return crouching;
+            return PlayerMovement.Instance.IsCrouching();
+        }
+    }
+
+    [HarmonyPatch(typeof(Milk), "Update")]
+    public class Hook_Milk_Update
+    {
+        public static bool Prefix(Milk __instance)
+        {
+            // unlink milk rotation from fps
+            float z = Mathf.PingPong(Time.time, 1f);
+            Vector3 axis = new Vector3(1f, 1f, z);
+            __instance.transform.Rotate(axis, Time.deltaTime * 200);
+            return false;
+        }
     }
 
     // Riptide Fix

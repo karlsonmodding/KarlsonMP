@@ -30,12 +30,15 @@ namespace KarlsonMP
             spectatingId = targetId;
             GameObject.Find("Camera/Main Camera/GunCam").SetActive(false);
             PlayerMovement.Instance.GetPlayerCollider().enabled = false;
+            PlayerMovement.Instance.rb.isKinematic = true;
+            PlayerMovement.Instance.rb.velocity = Vector3.zero;
         }
         public static void ExitSpectate()
         {
             spectatingId = 0;
             GameObject.Find("Camera/Main Camera/GunCam").SetActive(true);
             PlayerMovement.Instance.GetPlayerCollider().enabled = true;
+            PlayerMovement.Instance.rb.isKinematic = false;
             foreach (var p in players)
                 p.player.SetActive(true);
         }
@@ -277,54 +280,74 @@ namespace KarlsonMP
                 }
             }, new Vector2(0, 0));
 
-            settings = new GuiWindow("settings", Screen.width / 2 - 220, Screen.height / 2 - 102, 440, 205, () =>
+            settings = new GuiWindow("settings", Screen.width / 2 - 220, Screen.height / 2 - 112, 440, 225, () =>
             {
                 if(!(bool)settings.storage && GameState.Instance != null)
                 {
-                    settings_graphics = new GuiSwitch(GameState.Instance.SetGraphics, GameState.Instance.GetGraphics(), new Rect(5f, 45f, 100f, 20f), "Good", "Fast");
-                    settings_motion_blur = new GuiSwitch(GameState.Instance.SetBlur, GameState.Instance.blur, new Rect(5f, 90f, 100f, 20f), "On", "Off");
-                    settings_cam_shake = new GuiSwitch(GameState.Instance.SetShake, GameState.Instance.shake, new Rect(5f, 135f, 100f, 20f), "On", "Off");
-                    settings_sensitivity = new GuiSliderAndTextbox(GameState.Instance.SetSensitivity, GameState.Instance.GetSensitivity(), 0.1f, 3.0f, new Rect(120f, 45f, 120f, 20f), new Rect(240f, 45f, 30f, 20f));
-                    settings_volume = new GuiSliderAndTextbox(GameState.Instance.SetVolume, GameState.Instance.GetVolume(), 0f, 1f, new Rect(120f, 90f, 120f, 20f), new Rect(240f, 90f, 30f, 20f));
-                    settings_music = new GuiSliderAndTextbox(GameState.Instance.SetMusic, GameState.Instance.GetMusic(), 0f, 1f, new Rect(120f, 135f, 120f, 20f), new Rect(240f, 135f, 30f, 20f));
-                    settings_fov = new GuiSliderAndTextbox(GameState.Instance.SetFov, GameState.Instance.GetFov(), 50f, 150f, new Rect(120f, 180f, 120f, 20f), new Rect(240f, 180f, 30f, 20f));
+                    settings_graphics = new GuiSwitch(GameState.Instance.SetGraphics, GameState.Instance.GetGraphics(), new Rect(5f, 65f, 100f, 20f), "Good", "Fast");
+                    settings_motion_blur = new GuiSwitch(GameState.Instance.SetBlur, GameState.Instance.blur, new Rect(5f, 110f, 100f, 20f), "On", "Off");
+                    settings_cam_shake = new GuiSwitch(GameState.Instance.SetShake, GameState.Instance.shake, new Rect(5f, 155f, 100f, 20f), "On", "Off");
+                    settings_sensitivity = new GuiSliderAndTextbox(GameState.Instance.SetSensitivity, GameState.Instance.GetSensitivity(), 0.1f, 3.0f, new Rect(120f, 65f, 120f, 20f), new Rect(240f, 65f, 30f, 20f));
+                    settings_volume = new GuiSliderAndTextbox(GameState.Instance.SetVolume, GameState.Instance.GetVolume(), 0f, 1f, new Rect(120f, 110f, 120f, 20f), new Rect(240f, 110f, 30f, 20f));
+                    settings_music = new GuiSliderAndTextbox(GameState.Instance.SetMusic, GameState.Instance.GetMusic(), 0f, 1f, new Rect(120f, 155f, 120f, 20f), new Rect(240f, 155f, 30f, 20f));
+                    settings_fov = new GuiSliderAndTextbox(GameState.Instance.SetFov, GameState.Instance.GetFov(), 50f, 150f, new Rect(120f, 200f, 120f, 20f), new Rect(240f, 200f, 30f, 20f));
                     var debugInstance = UnityEngine.Object.FindObjectOfType<Debug>();
-                    settings_fps_on = new GuiReflectionCheckbox(typeof(Debug).GetField("fpsOn", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), debugInstance, new Rect(285f, 25f, 100f, 20f), "Show FPS");
-                    settings_speed_on = new GuiReflectionCheckbox(typeof(Debug).GetField("speedOn", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), debugInstance, new Rect(285f, 45f, 100f, 20f), "Show Speed");
+                    settings_fps_on = new GuiReflectionCheckbox(typeof(Debug).GetField("fpsOn", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), debugInstance, new Rect(285f, 45f, 100f, 20f), "Show FPS");
+                    settings_speed_on = new GuiReflectionCheckbox(typeof(Debug).GetField("speedOn", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic), debugInstance, new Rect(285f, 65f, 100f, 20f), "Show Speed");
 
+                    crosshairRef = GameObject.Find("/Managers (1)/UI/Game/Crosshair");
+                    crosshair_thick = new GuiSliderAndTextbox(Crosshair.SetThick, crosshairRef.transform.GetChild(0).transform.localScale.y * 100, 0, 10, new Rect(5f, 65f, 120f, 20f), new Rect(125f, 65f, 30f, 20f));
+                    crosshair_gap = new GuiSliderAndTextbox(Crosshair.SetGap, -crosshairRef.transform.GetChild(0).transform.localPosition.x * 2, 0, 100, new Rect(5f, 110f, 120f, 20f), new Rect(125f, 110f, 30f, 20f));
+                    crosshair_len = new GuiSliderAndTextbox(Crosshair.SetLen, crosshairRef.transform.GetChild(0).transform.localScale.x * 20, 0, 10, new Rect(5f, 155f, 120f, 20f), new Rect(125f, 155f, 30f, 20f));
                     settings.storage = true;
                 }
                 if (!(bool)settings.storage)
                     return;
 
                 if (GUI.Button(new Rect(390, 0, 50, 20), "Close")) settings.show = false;
-                GUI.Label(new Rect(5f, 25f, 100f, 20f), "<b>Graphics</b>");
-                settings_graphics.draw();
+                settings_tab = GUI.Toolbar(new Rect(5f, 20f, 430f, 20f), settings_tab, settings_tabs);
+                if(settings_tab == 0)
+                {
+                    GUI.Label(new Rect(5f, 45f, 100f, 20f), "<b>Graphics</b>");
+                    settings_graphics.draw();
 
-                GUI.Label(new Rect(5f, 70f, 100f, 20f), "<b>Motion Blur</b>");
-                settings_motion_blur.draw();
+                    GUI.Label(new Rect(5f, 90f, 100f, 20f), "<b>Motion Blur</b>");
+                    settings_motion_blur.draw();
 
-                GUI.Label(new Rect(5f, 115f, 100f, 20f), "<b>Cam Shake</b>");
-                settings_cam_shake.draw();
+                    GUI.Label(new Rect(5f, 135f, 100f, 20f), "<b>Cam Shake</b>");
+                    settings_cam_shake.draw();
 
-                GUI.Label(new Rect(5f, 160f, 100f, 20f), "<b>Slow-mo</b>");
-                GUI.Label(new Rect(5f, 180f, 100f, 20f), "Off by KMP");
+                    GUI.Label(new Rect(5f, 180f, 100f, 20f), "<b>Slow-mo</b>");
+                    GUI.Label(new Rect(5f, 200f, 100f, 20f), "Off by KMP");
 
-                GUI.Label(new Rect(120f, 25f, 150f, 20f), "<b>Sensitivity</b>");
-                settings_sensitivity.draw();
+                    GUI.Label(new Rect(120f, 45f, 150f, 20f), "<b>Sensitivity</b>");
+                    settings_sensitivity.draw();
 
-                GUI.Label(new Rect(120f, 70f, 150f, 20f), "<b>Volume</b>");
-                settings_volume.draw();
+                    GUI.Label(new Rect(120f, 90f, 150f, 20f), "<b>Volume</b>");
+                    settings_volume.draw();
 
-                GUI.Label(new Rect(120f, 115f, 150f, 20f), "<b>Music</b>");
-                settings_music.draw();
+                    GUI.Label(new Rect(120f, 135f, 150f, 20f), "<b>Music</b>");
+                    settings_music.draw();
 
-                GUI.Label(new Rect(120f, 160f, 150f, 20f), "<b>FOV</b>");
-                settings_fov.draw();
+                    GUI.Label(new Rect(120f, 180f, 150f, 20f), "<b>FOV</b>");
+                    settings_fov.draw();
 
-                settings_fps_on.draw();
-                settings_speed_on.draw();
-                showDebug = GUI.Toggle(new Rect(285f, 65f, 130f, 20f), showDebug, "Show RTT (ping)");
+                    settings_fps_on.draw();
+                    settings_speed_on.draw();
+                    showDebug = GUI.Toggle(new Rect(285f, 85f, 130f, 20f), showDebug, "Show RTT (ping)");
+                }
+                else if(settings_tab == 1)
+                {
+                    GUI.Label(new Rect(5f, 45f, 150f, 20f), "<b>Crosshair Thickness</b>");
+                    crosshair_thick.draw();
+                    GUI.Label(new Rect(5f, 90f, 150f, 20f), "<b>Crosshair Gap</b>");
+                    crosshair_gap.draw();
+                    GUI.Label(new Rect(5f, 135f, 150f, 20f), "<b>Crosshair Length</b>");
+                    crosshair_len.draw();
+
+                    Inventory.EnableHitmarker = GUI.Toggle(new Rect(170f, 45f, 130f, 20f), Inventory.EnableHitmarker, "Show Hitmarker");
+                    Inventory.ShowDamage = GUI.Toggle(new Rect(170f, 65f, 130f, 20f), Inventory.ShowDamage, "Show Damage");
+                }
             }, false);
 
             password = new GuiWindow("Enter Password (E2E encrypted)", Screen.width / 2 - 150, Screen.height / 2 - 75, 300, 150, () =>
@@ -341,7 +364,44 @@ namespace KarlsonMP
         static GuiWindow settings, console, password;
         static GuiSwitch settings_graphics, settings_motion_blur, settings_cam_shake;
         static GuiSliderAndTextbox settings_sensitivity, settings_volume, settings_music, settings_fov;
-        static GuiReflectionCheckbox settings_fps_on, settings_speed_on;
+        public static GuiReflectionCheckbox settings_fps_on, settings_speed_on;
+        static string[] settings_tabs = new string[] { "Vanilla", "Crosshair" };
+        static int settings_tab = 0;
+        static GameObject crosshairRef;
+        static GuiSliderAndTextbox crosshair_thick, crosshair_gap, crosshair_len;
+        public static class Crosshair
+        {
+            public static void SetThick(float val)
+            {
+                if(crosshairRef == null)
+                    crosshairRef = GameObject.Find("/Managers (1)/UI/Game/Crosshair");
+                val /= 100;
+                float len = crosshairRef.transform.GetChild(0).localScale.x;
+                crosshairRef.transform.GetChild(0).localScale = crosshairRef.transform.GetChild(1).localScale =
+                crosshairRef.transform.GetChild(2).localScale = crosshairRef.transform.GetChild(3).localScale = new Vector3(len, val, 1f);
+            }
+
+            public static void SetGap(float val)
+            {
+                if (crosshairRef == null)
+                    crosshairRef = GameObject.Find("/Managers (1)/UI/Game/Crosshair");
+                val /= 2;
+                crosshairRef.transform.GetChild(0).localPosition = new Vector3(-val, 0, 0);
+                crosshairRef.transform.GetChild(1).localPosition = new Vector3(val, 0, 0);
+                crosshairRef.transform.GetChild(2).localPosition = new Vector3(0, val, 0);
+                crosshairRef.transform.GetChild(3).localPosition = new Vector3(0, -val, 0);
+            }
+
+            public static void SetLen(float val)
+            {
+                if (crosshairRef == null)
+                    crosshairRef = GameObject.Find("/Managers (1)/UI/Game/Crosshair");
+                val /= 20;
+                float thick = crosshairRef.transform.GetChild(0).localScale.y;
+                crosshairRef.transform.GetChild(0).localScale = crosshairRef.transform.GetChild(1).localScale =
+                crosshairRef.transform.GetChild(2).localScale = crosshairRef.transform.GetChild(3).localScale = new Vector3(val, thick, 1f);
+            }
+        }
 
         static string StripColor(string s)
         {
