@@ -90,7 +90,10 @@ namespace KarlsonMP
 
             public static void CreateProp(int id, GameObject go, bool annouce = false)
             {
-                activeProps.Add(id, new Prop(id, go, annouce));
+                if (activeProps.ContainsKey(id))
+                    activeProps[id] = new Prop(id, go, annouce);
+                else
+                    activeProps.Add(id, new Prop(id, go, annouce));
             }
         }
         public class KMP_PropData : MonoBehaviour

@@ -72,12 +72,17 @@ namespace KarlsonMP
                 if (CheckHash(bytes).SequenceEqual(CurrentFile.Hash))
                 {
                     KMP_Console.Log($"<color=green>Downloaded file {CurrentFile.FileName}.</color>");
-                    downloadedFiles.Add(CurrentFile.FileName, bytes);
+                    if(downloadedFiles.ContainsKey(CurrentFile.FileName))
+                        downloadedFiles[CurrentFile.FileName] = bytes;
+                    else
+                        downloadedFiles.Add(CurrentFile.FileName, bytes);
                     OnFileReady(CurrentFile.FileName);
                     return;
                 }
                 KMP_Console.Log($"<color=red>Downloaded file {CurrentFile.FileName} but hash is invalid.</color>");
                 // invalid hash, re-schedule file
+                if(downloadQueue.ContainsKey(CurrentFile.FileName))
+                    downloadQueue.Remove(CurrentFile.FileName);
                 downloadQueue.Add(CurrentFile.FileName, (CurrentFile.TotalSize, CurrentFile.Hash));
                 return;
             }
@@ -93,7 +98,7 @@ namespace KarlsonMP
             if (fileName == ClientHandle.RequestedMap)
             {
                 PlaytimeLogic.PrepareMapChange();
-                KME_LevelPlayer.LoadLevel(fileName, downloadedFiles[fileName]);
+                KME_LevelPlayer.LoadLevel(fileName, downloadedFiles[fileName], ClientHandle.RequestedMapLegacy);
             }
         }
     }

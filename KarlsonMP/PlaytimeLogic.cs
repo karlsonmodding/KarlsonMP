@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KarlsonMapEditor.LevelLoader;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace KarlsonMP
         public static void StartSpectate(int targetId)
         {
             // set dead
-            PlayerMovement.Instance.ReflectionSet("dead", true);
+            PlayerMovement.Instance.dead = true;
             specOffset = 10f;
             spectatingId = targetId;
             GameObject.Find("Camera/Main Camera/GunCam").SetActive(false);
@@ -352,7 +353,7 @@ namespace KarlsonMP
 
             password = new GuiWindow("Enter Password (E2E encrypted)", Screen.width / 2 - 150, Screen.height / 2 - 75, 300, 150, () =>
             {
-                GUI.Label(new Rect(5f, 25f, 300, 60), PasswordDialog.Caption);
+                GUI.Label(new Rect(5f, 20f, 300, 100), PasswordDialog.Caption);
                 GUI.SetNextControlName("passfield");
                 PasswordDialog.Input = GUI.PasswordField(new Rect(10f, 120f, 280f, 20f), PasswordDialog.Input, '●');
                 GUI.FocusControl("passfield");
@@ -480,7 +481,7 @@ namespace KarlsonMP
                     GUI.FocusControl("chatcontrol");
                     if (chatContent.Contains('\n'))
                     {
-                        chatContent.Replace("\n", "");
+                        chatContent = chatContent.Replace("\n", "");
                         if (chatContent.Trim().Length > 0)
                             ClientSend.ChatMessage(chatContent.Trim());
                         chatContent = "";
@@ -512,6 +513,11 @@ namespace KarlsonMP
 
         public static void DisconnectToBrowser()
         {
+            try
+            {
+                LevelPlayer.ExitedLevel();
+            }
+            catch { }
             // reset everything and prepare for next server
             NetworkManager.Quit();
             paused = false;
@@ -531,6 +537,8 @@ namespace KarlsonMP
             KTickManager.Reset();
             nametagDistance = 50f;
             Game.Instance.MainMenu();
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
         }
     }
 }

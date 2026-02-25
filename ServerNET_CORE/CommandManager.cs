@@ -30,8 +30,9 @@ namespace ServerKMP
                 foreach (var x in MapManager.defaultMaps)
                     Console.WriteLine(x.name);
                 Console.WriteLine("Custom maps:");
-                foreach(var x in Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Maps")))
-                    if(x.EndsWith(".kme_raw") && File.Exists(x.Replace(".kme_raw", ".kme_data")))
+                foreach (var x in Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Maps")))
+                    if (x.EndsWith(".kme_raw") && File.Exists(x.Replace(".kme_raw", ".kme_data")) ||
+                        x.EndsWith(".kme") && File.Exists(x.Replace(".kme", ".kme_data")))
                         Console.WriteLine(Path.GetFileNameWithoutExtension(x));
             });
             commands.Add("gamemode", (args) =>
@@ -50,10 +51,10 @@ namespace ServerKMP
 
         public static void Execute(string label, string[] args)
         {
-            if(!commands.ContainsKey(label))
-                Console.WriteLine($"Unknown command {label}. Run 'cmds' for a list of commands");
+            if (commands.TryGetValue(label, out var value))
+                value(args);
             else
-                commands[label](args);
+                Console.WriteLine($"Unknown command {label}. Run 'cmds' for a list of commands");
         }
     }
 }

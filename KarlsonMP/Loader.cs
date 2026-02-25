@@ -104,9 +104,9 @@ namespace KarlsonMP
                     return;
                 }
                 if (args[1] == "fps")
-                    UnityEngine.Object.FindObjectOfType<Debug>().ReflectionSet("fpsOn", args[2] == "1");
+                    UnityEngine.Object.FindObjectOfType<Debug>().fpsOn = args[2] == "1";
                 if (args[1] == "speed")
-                    UnityEngine.Object.FindObjectOfType<Debug>().ReflectionSet("speedOn", args[2] == "1");
+                    UnityEngine.Object.FindObjectOfType<Debug>().speedOn = args[2] == "1";
             });
             KMP_Console.commands.Add("crosshair", (args) =>
             {

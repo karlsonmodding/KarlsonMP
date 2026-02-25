@@ -12,6 +12,7 @@
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <UsingMicrosoftNETSdk>true</UsingMicrosoftNETSdk>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -32,11 +33,15 @@
     <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
     <Reference Include="0Harmony, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Lib.Harmony.2.2.2\lib\net472\0Harmony.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp">
+    <Reference Include="Assembly-CSharp" Publicize="true">
       <HintPath>..\lib\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="KarlsonMapEditor.LevelLoader">
+      <HintPath>..\lib\KarlsonMapEditor.LevelLoader.dll</HintPath>
     </Reference>
     <Reference Include="RiptideNetworking">
       <HintPath>..\lib\RiptideNetworking.dll</HintPath>
@@ -239,7 +244,6 @@
   <ItemGroup>
     <Compile Include="BulletRenderer.cs" />
     <Compile Include="FileHandler.cs" />
-    <Compile Include="ForcedCultureInfo.cs" />
     <Compile Include="GuiExtensions.cs" />
     <Compile Include="HarmonyHooks.cs" />
     <Compile Include="HUDMessages.cs" />
@@ -255,7 +259,6 @@
     <Compile Include="MessageExtensions.cs" />
     <Compile Include="MonoHooks.cs" />
     <Compile Include="NetworkManager.cs" />
-    <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="PlaytimeLogic.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -270,7 +273,6 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetPath)" "$(SolutionDir)build\KMP"
-copy "$(TargetDir)0Harmony.dll" "$(SolutionDir)build\KMP"
 copy "$(TargetDir)RiptideNetworking.dll" "$(SolutionDir)build\KMP"
 copy "$(SolutionDir)karlsonmp.bundle" "$(SolutionDir)build\KMP"</PostBuildEvent>
   </PropertyGroup>

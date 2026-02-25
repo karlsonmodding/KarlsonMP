@@ -1,4 +1,5 @@
-﻿using Riptide;
+﻿using KarlsonMapEditor.LevelLoader;
+using Riptide;
 using Riptide.Utils;
 using System;
 using System.Collections;
@@ -14,6 +15,8 @@ namespace KarlsonMP
 {
     public class NetworkManager
     {
+        public const ulong ProtocolVersion = 5;
+
         public static Client client;
         public static string address { get; private set; }
         public static string username { get; private set; }
@@ -103,7 +106,7 @@ namespace KarlsonMP
         public static void Handshake(string username)
         {
             Message message = Message.Create(MessageSendMode.Reliable, Packet_C2S.handshake);
-            message.Add(username);
+            message.Add(username).Add(NetworkManager.ProtocolVersion);
             NetworkManager.client.Send(message);
         }
 
@@ -292,14 +295,22 @@ namespace KarlsonMP
         }
 
         public static string RequestedMap { get; private set; } = "";
+        public static bool RequestedMapLegacy { get; private set; } = true;
         [MessageHandler(Packet_S2C.map)]
         public static void MapChange(Message message)
         {
+            try
+            {
+                LevelPlayer.ExitedLevel();
+            }
+            catch { }
+
             bool isDefault = message.GetBool();
             RequestedMap = message.GetString();
-            KillFeedGUI.AddText($"Loading map {RequestedMap}");
+            RequestedMapLegacy = message.GetBool();
+            KillFeedGUI.AddText($"Loading map {(RequestedMapLegacy ? "<color=yellow>[L]</color> " : "")}{RequestedMap}");
             // start with the player dead
-            PlayerMovement.Instance.ReflectionSet("dead", true);
+            PlayerMovement.Instance.dead = true;
             if (isDefault)
             {
                 PlaytimeLogic.PrepareMapChange();
@@ -330,7 +341,7 @@ namespace KarlsonMP
             ushort killer = message.GetUShort();
             // if killer = 0, natural cause
             KMP_AudioManager.PlaySound("death", 0.05f);
-            PlayerMovement.Instance.ReflectionSet("dead", true);
+            PlayerMovement.Instance.dead = true;
         }
 
         [MessageHandler(Packet_S2C.respawn)]
@@ -338,14 +349,14 @@ namespace KarlsonMP
         {
             if (PlaytimeLogic.spectatingId != 0)
                 PlaytimeLogic.ExitSpectate();
-            PlayerMovement.Instance.ReflectionSet("dead", false);
+            PlayerMovement.Instance.dead = false;
             PlaytimeLogic.suicided = false;
             // reset guns ammo, because we got respawned
             Inventory.ReloadAll();
             Vector3 position = message.GetVector3();
             PlayerMovement.Instance.transform.position = position;
             PlayerMovement.Instance.rb.velocity = Vector3.zero;
-            PlayerMovement.Instance.ReflectionInvoke("StopCrouch");
+            PlayerMovement.Instance.StopCrouch();
         }
 
         [MessageHandler(Packet_S2C.chat)]
@@ -430,10 +441,12 @@ namespace KarlsonMP
         public static void ShowNametags(Message message)
         {
             bool toggle = message.GetBool();
-            if(message.UnreadBits > 0)
+            bool list = message.GetBool();
+            if(list)
             {
+                int count = message.GetInt();
                 // player list toggle
-                while(message.UnreadBits > 0)
+                while(count-- > 0)
                 {
                     ushort pid = message.GetUShort();
                     var p = (from x in PlaytimeLogic.players where x.id == pid select x).FirstOrDefault();

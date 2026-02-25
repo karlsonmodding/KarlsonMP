@@ -46,10 +46,10 @@ namespace Race
 
             // send player current map
             if (MapManager.currentMap!.isDefault) // default map, just send scene name
-                new MessageServerToClient.MessageMapChange(true, MapManager.currentMap.name).Send(handshake.fromId);
+                new MessageServerToClient.MessageMapChange(true, MapManager.currentMap.name, true).Send(handshake.fromId);
             else
             {
-                new MessageServerToClient.MessageMapChange(false, MapManager.currentMap.name).Send(handshake.fromId);
+                new MessageServerToClient.MessageMapChange(false, MapManager.currentMap.name, MapManager.currentMap.isLegacy).Send(handshake.fromId);
                 FileUploader.SendMapUploadRequest(handshake.fromId);
             }
 

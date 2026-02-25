@@ -108,7 +108,7 @@ namespace KarlsonMP
         }
     }
 
-    public class KTickManager
+    public static class KTickManager
     {
         private static readonly List<KTick> ticks = new List<KTick>();
         public static ulong ServerTick { get; private set; } = 0;

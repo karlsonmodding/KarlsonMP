@@ -99,7 +99,7 @@ namespace KarlsonMP
             }
             if (scene.name == "4Escape0")
             {
-                KMP_Console.Log("Initializing prefabs.. Escape 0 (1/2)");
+                KMP_Console.Log("Initializing prefabs.. Escape 0 (2/2)");
                 KMP_PrefabManager.Init2();
                 SceneManager.LoadScene("1Sandbox0", LoadSceneMode.Single);
             }
@@ -138,6 +138,8 @@ namespace KarlsonMP
     {
         public static bool Prefix(bool ___fpsOn, bool ___speedOn, TextMeshProUGUI ___fps, ref float ___deltaTime)
         {
+            if (!PlayerMovement.Instance.rb)
+                return false;
             if (___fpsOn || ___speedOn)
             {
                 if (!___fps.gameObject.activeInHierarchy) ___fps.gameObject.SetActive(true);
@@ -184,7 +186,7 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(Timer), "Update")]
     public class Hook_Timer_Update
     {
-        // for some reason on ML the timer remains active.
+        // for some reason the timer sometimes remains active.
         public static void Postfix(TextMeshProUGUI ___text)
         {
             if(___text.gameObject.activeSelf)
@@ -247,7 +249,7 @@ namespace KarlsonMP
         {
             if (!Enabled) return;
             if (crouching && !___crouching) // desync between crouch action and state
-                PlayerMovement.Instance.ReflectionInvoke("StopCrouch");
+                PlayerMovement.Instance.StopCrouch();
             ___crouching = crouching;
         }
 

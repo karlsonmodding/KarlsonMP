@@ -37,6 +37,7 @@ namespace ServerKMP.GamemodeApi
         public static void CancelTask(uint id)
         {
             scheduledTasks.RemoveAll(x => x.identifier == id);
+            tasksToSchedule.RemoveAll(x => x.identifier == id);
         }
 
         public static void ClearAndAddTasks()

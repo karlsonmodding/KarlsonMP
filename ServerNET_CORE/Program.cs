@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -18,7 +19,6 @@ namespace ServerKMP
 
         static void Main(string[] _)
         {
-
             Config.LoadConfig();
             mainThread = new Thread(MainThread);
             mainThread.Start();
@@ -40,6 +40,9 @@ namespace ServerKMP
 
             // start networking
             NetworkManager.Start();
+
+            // add asm resolve
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
             // load gamemode
             GamemodeManager.Init();
@@ -74,6 +77,14 @@ namespace ServerKMP
 
             // shutdown server
             NetworkManager.Exit();
+        }
+
+        private static System.Reflection.Assembly? CurrentDomain_AssemblyResolve(object? sender, ResolveEventArgs args)
+        {
+            var dll = new AssemblyName(args.Name).Name + ".dll";
+            if (File.Exists(dll))
+                return Assembly.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), dll));
+            return null;
         }
 
         static void Update()

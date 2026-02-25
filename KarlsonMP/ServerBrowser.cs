@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.XR;
 
 namespace KarlsonMP
 {
@@ -87,7 +89,7 @@ namespace KarlsonMP
         bool addServer = false;
         string sbAddr = "";
 
-        Dictionary<string, (string, ushort, ushort)> ServerQueryCache = new Dictionary<string, (string, ushort, ushort)>();
+        Dictionary<string, (string, ushort, ushort, ulong)> ServerQueryCache = new Dictionary<string, (string, ushort, ushort, ulong)>();
         public static Riptide.Client QueryClient;
         string QueryServerAddr;
         void QueryServer(string addr)
@@ -102,13 +104,47 @@ namespace KarlsonMP
 
         private void QueryClient_ConnectionFailed(object sender, Riptide.ConnectionFailedEventArgs e)
         {
-            ServerQueryCache.Add(QueryServerAddr, (QueryServerAddr + " | Failed to ping server..", 0, 0));
+            ServerQueryCache.Add(QueryServerAddr, (QueryServerAddr + " | <color=red>Failed to ping server</color>", 0, 0, ulong.MaxValue));
             QueryClient = null;
+        }
+
+        static string EscapeMOTD(string str)
+        {
+            str = str.Trim();
+            // we allow at most one '\n' and all tags except <size>
+            if(str.Contains("\n"))
+            {
+                int idx = str.IndexOf("\n");
+                if(str.Substring(idx + 1).Contains("\n"))
+                    str = str.Substring(0, idx) + "\n" + str.Substring(idx + 1).Replace("\n", " ");
+            }
+            return str.Replace("<size", "<<i></i>size").Replace("</size", "<<i></i>/size");
         }
 
         private void QueryClient_MessageReceived(object sender, Riptide.MessageReceivedEventArgs e)
         {
-            ServerQueryCache.Add(QueryServerAddr, (e.Message.GetString(), e.Message.GetUShort(), e.Message.GetUShort()));
+            try
+            {
+                ServerQueryCache.Add(QueryServerAddr, (EscapeMOTD(e.Message.GetString()), e.Message.GetUShort(), e.Message.GetUShort(), e.Message.GetULong()));
+            }
+            catch
+            {
+                try
+                {
+                    ServerQueryCache.Add(QueryServerAddr, (EscapeMOTD(e.Message.GetString()), e.Message.GetUShort(), e.Message.GetUShort(), 0));
+                }
+                catch
+                {
+                    try
+                    {
+                        ServerQueryCache.Add(QueryServerAddr, (EscapeMOTD(e.Message.GetString()), 0, 0, 0));
+                    }
+                    catch
+                    {
+                        ServerQueryCache.Add(QueryServerAddr, (QueryServerAddr + " | <color=red>Query error</color>", 0, 0, ulong.MaxValue));
+                    }
+                }
+            }
             QueryClient.Disconnect();
             QueryClient = null;
         }
@@ -185,12 +221,22 @@ namespace KarlsonMP
                     GUI.DrawTextureWithTexCoords(new Rect(0, 50 * i, Screen.width, 50), altTx ? listAlt : listTx, new Rect(0, 0, 1, 1));
                     if(!ServerQueryCache.ContainsKey(x))
                     {
-                        GUI.Label(new Rect(5, 50 * i, 350, 50), x, vAlign);
-                        QueryServer(x);
+                        if(QueryServerAddr == x)
+                            GUI.Label(new Rect(5, 50 * i, 350, 50), x + " | <color=yellow>Pinging server...</color>", vAlign);
+                        else
+                        {
+                            GUI.Label(new Rect(5, 50 * i, 350, 50), x, vAlign);
+                            QueryServer(x);
+                        }
                     }
                     else
                     {
-                        GUI.Label(new Rect(5, 50 * i, 500, 50), ServerQueryCache[x].Item1, vAlign);
+                        if (ServerQueryCache[x].Item4 < NetworkManager.ProtocolVersion)
+                            GUI.Label(new Rect(5, 50 * i, 500, 50), "<color=red>[Old Server]</color> " + ServerQueryCache[x].Item1, vAlign);
+                        else if (ServerQueryCache[x].Item4 != ulong.MaxValue && ServerQueryCache[x].Item4 > NetworkManager.ProtocolVersion)
+                            GUI.Label(new Rect(5, 50 * i, 500, 50), "<color=red>[Old Client]</color> " + ServerQueryCache[x].Item1, vAlign);
+                        else
+                            GUI.Label(new Rect(5, 50 * i, 500, 50), ServerQueryCache[x].Item1, vAlign);
                         GUI.Label(new Rect(510, 50 * i, 150, 50), ServerQueryCache[x].Item2 + "/" + ServerQueryCache[x].Item3, vAlign);
                     }
                     if (GUI.Button(new Rect(0, 50 * i, Screen.width, 50), "", listBtn))
@@ -233,8 +279,7 @@ namespace KarlsonMP
 
         public void Update()
         {
-            if (QueryClient != null)
-                QueryClient.Update();
+            QueryClient?.Update();
         }
     }
 }

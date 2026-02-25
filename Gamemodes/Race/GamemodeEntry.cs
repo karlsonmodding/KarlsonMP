@@ -120,11 +120,11 @@ namespace Race
         public override void OnMapChange()
         {
             if (MapManager.currentMap!.isDefault) // default map, just send scene name
-                new MessageServerToClient.MessageMapChange(true, MapManager.currentMap.name).SendToAll();
+                new MessageServerToClient.MessageMapChange(true, MapManager.currentMap.name, true).SendToAll();
             else
             {
                 // here we need to use the pre-implemented http server
-                new MessageServerToClient.MessageMapChange(false, MapManager.currentMap.name).SendToAll();
+                new MessageServerToClient.MessageMapChange(false, MapManager.currentMap.name, MapManager.currentMap.isLegacy).SendToAll();
                 FileUploader.SendMapUploadRequest();
                 ProcessMapData();
             }

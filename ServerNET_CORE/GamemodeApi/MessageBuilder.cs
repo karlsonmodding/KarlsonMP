@@ -245,14 +245,15 @@ namespace ServerKMP.GamemodeApi
         public class MessageMapChange : MessageBase_S2C
         {
             /// <summary>
-            /// Tell client to change to vanilla scene
+            /// Tell client to change map
             /// </summary>
             /// <param name="vanillaMap">true if map is vanilla (1Sandbox0)</param>
             /// <param name="sceneName">scene name</param>
-            public MessageMapChange(bool vanillaMap, string sceneName)
+            /// <param name="legacy">true if map is .kme_raw (legacy format)</param>
+            public MessageMapChange(bool vanillaMap, string sceneName, bool legacy)
             {
                 RiptideMessage = Message.Create(MessageSendMode.Reliable, Packet_S2C.map);
-                RiptideMessage.Add(vanillaMap).Add(sceneName);
+                RiptideMessage.Add(vanillaMap).Add(sceneName).Add(legacy);
             }
         }
         public class MessageSetHP : MessageBase_S2C
@@ -385,12 +386,12 @@ namespace ServerKMP.GamemodeApi
             public MessageShowNametags(bool show)
             {
                 RiptideMessage = Message.Create(MessageSendMode.Reliable, Packet_S2C.showNametags);
-                RiptideMessage.Add(show);
+                RiptideMessage.Add(show).Add(false);
             }
             public MessageShowNametags(bool show, List<ushort> players)
             {
                 RiptideMessage = Message.Create(MessageSendMode.Reliable, Packet_S2C.showNametags);
-                RiptideMessage.Add(show);
+                RiptideMessage.Add(show).Add(true).Add(players.Count);
                 foreach (var u in players)
                     RiptideMessage.Add(u);
             }
@@ -684,6 +685,8 @@ namespace ServerKMP.GamemodeApi
             {
                 PersistKeyInCsp = false
             };
+            if (NetworkManager.passwordEncryption.ContainsKey(client))
+                NetworkManager.passwordEncryption.Remove(client);
             NetworkManager.passwordEncryption.Add(client, rsa);
             new MessageServerToClient.MessagePassword(prompt, rsa.ExportCspBlob(false)).Send(client);
         }

@@ -15,6 +15,8 @@ namespace ServerKMP
 {
     public static class NetworkManager
     {
+        public const ulong ProtocolVersion = 5;
+
         public static Server? server;
         public static int CurrentTick { get; private set; } = 0;
         public static HashSet<ushort> clientsAwaitingHandshake = new HashSet<ushort>(); // players that need to send handshake
@@ -38,7 +40,7 @@ namespace ServerKMP
         private static void Server_ClientConnected(object? sender, ServerConnectedEventArgs e)
         {
             Message handshake = Message.Create(MessageSendMode.Reliable, Packet_S2C.handshake);
-            handshake.Add(MOTD).Add((ushort)registeredOnGamemode.Count).Add(server!.MaxClientCount);
+            handshake.Add(MOTD).Add((ushort)registeredOnGamemode.Count).Add(server!.MaxClientCount).Add(ProtocolVersion);
             server!.Send(handshake, e.Client);
             clientsAwaitingHandshake.Add(e.Client.Id);
             KMP_TaskScheduler.Schedule(() =>
@@ -125,14 +127,31 @@ namespace ServerKMP
         public static void Handshake(ushort from, Message message)
         {
             string username = message.GetString();
-            Console.WriteLine($"Client {from} logged in as {username}");
-            NetworkManager.clientsAwaitingHandshake.Remove(from);
-            NetworkManager.registeredOnGamemode.Add(from);
-            NetworkManager.usernameDatabase[from] = username;
-            NetworkManager.broadcastPosition[from] = false;
-            new MessageServerToClient.MessageSync(TickManager.CurrentTick).Send(from);
-            TickManager.netObjects.Add(from, new KPlayer());
-            GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new MessageClientToServer.MessageHandshake(from, username)));
+            try
+            {
+                ulong protocolVersion = message.GetULong();
+                if (protocolVersion != NetworkManager.ProtocolVersion)
+                {
+                    if (protocolVersion < NetworkManager.ProtocolVersion)
+                        NetManager.KickClient(from, "Your client is too old. Update KMP!");
+                    else
+                        NetManager.KickClient(from, "Server is too old! You need to wait for it to be updated.");
+                    Console.WriteLine($"Rejected ({from}) {username} because protocol doesn't match.");
+                    return;
+                }
+                Console.WriteLine($"Client {from} logged in as {username}");
+                NetworkManager.clientsAwaitingHandshake.Remove(from);
+                NetworkManager.registeredOnGamemode.Add(from);
+                NetworkManager.usernameDatabase[from] = username;
+                NetworkManager.broadcastPosition[from] = false;
+                new MessageServerToClient.MessageSync(TickManager.CurrentTick).Send(from);
+                TickManager.netObjects.Add(from, new KPlayer());
+                GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new MessageClientToServer.MessageHandshake(from, username)));
+            }
+            catch
+            {
+                NetManager.KickClient(from, "Your client is too old. Update KMP!");
+            }
         }
         [MessageHandler(Packet_C2S.position)]
         public static void PositionData(ushort from, Message message)
@@ -175,9 +194,10 @@ namespace ServerKMP
             }
             // decrypt password
             var rsa = NetworkManager.passwordEncryption[from];
-            GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new MessageClientToServer.MessagePassword(from, Encoding.UTF8.GetString(rsa.Decrypt(pw_enc, false)))));
+            var password = Encoding.UTF8.GetString(rsa.Decrypt(pw_enc, false));
             rsa.Dispose();
             NetworkManager.passwordEncryption.Remove(from);
+            GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new MessageClientToServer.MessagePassword(from, password)));
         }
         [MessageHandler(Packet_C2S.file_data)]
         public static void FileData(ushort from, Message message)

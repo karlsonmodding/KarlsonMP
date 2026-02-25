@@ -214,7 +214,7 @@ namespace KarlsonMP
             {
                 // init weapons
                 weapons[0].WeaponObject.SetActive(true);
-                PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ForcePickup(weapons[0].WeaponObject);
+                PlayerMovement.Instance.detectWeapons.ForcePickup(weapons[0].WeaponObject);
                 SwitchWeapon(0);
             }
         }
@@ -229,9 +229,9 @@ namespace KarlsonMP
             {
                 CurrentWeapon = 0;
                 // de-init weapons
-                PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet("hasGun", false);
-                PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet<GameObject>("gun", null);
-                PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet<Pickup>("gunScript", null);
+                PlayerMovement.Instance.detectWeapons.hasGun = false;
+                PlayerMovement.Instance.detectWeapons.gun = null;
+                PlayerMovement.Instance.detectWeapons.gunScript = null;
             }
         }
 
@@ -253,9 +253,9 @@ namespace KarlsonMP
 
             CurrentWeapon = idx;
             weapons[idx].WeaponObject.SetActive(true);
-            PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ForcePickup(weapons[idx].WeaponObject);
+            PlayerMovement.Instance.detectWeapons.ForcePickup(weapons[idx].WeaponObject);
             // somewhat nice animation
-            PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet("desiredPos", weapons[idx].DesiredPos);
+            PlayerMovement.Instance.detectWeapons.desiredPos = weapons[idx].DesiredPos;
             weapons[idx].WeaponObject.transform.localPosition = weapons[idx].DesiredPos;
             weapons[idx].WeaponObject.transform.localRotation = Quaternion.Euler(0f, 90f, 179f);
             // switch cooldown
@@ -285,9 +285,9 @@ namespace KarlsonMP
                 UnityEngine.Object.Destroy(x.WeaponObject);
             weapons.Clear();
             CurrentWeapon = 0;
-            PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet("hasGun", false);
-            PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet<GameObject>("gun", null);
-            PlayerMovement.Instance.ReflectionGet<DetectWeapons>("detectWeapons").ReflectionSet<Pickup>("gunScript", null);
+            PlayerMovement.Instance.detectWeapons.hasGun = false;
+            PlayerMovement.Instance.detectWeapons.gun = null;
+            PlayerMovement.Instance.detectWeapons.gunScript = null;
         }
 
         // 0 - ak47, 1 - deagle, 2 - shotgun

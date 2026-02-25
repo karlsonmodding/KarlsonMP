@@ -24,6 +24,12 @@ namespace KarlsonMP
             Inventory.GuiCtor(bundle);
             Inventory.LoadAssets(bundle);
             KMP_AudioManager.Initialize(bundle);
+
+            KarlsonMapEditor.LevelLoader.Main.Skybox.Default = RenderSettings.skybox;
+            KarlsonMapEditor.LevelLoader.Main.Skybox.Procedural = bundle.LoadAsset<Material>("assets/kme/skyboxprocedural.mat");
+            KarlsonMapEditor.LevelLoader.Main.Skybox.SixSided = bundle.LoadAsset<Material>("assets/kme/skyboxsixsided.mat");
+            KarlsonMapEditor.LevelLoader.MaterialManager.defaultShader = bundle.LoadAsset<Shader>("assets/kme/standardvariants.shader");
+
             KMP_Console.Log("monohooks start done");
 
             GuiCtor();
