@@ -270,7 +270,6 @@ namespace KarlsonMP
                 if (bottom && size.y > oldY)
                     scroll.y = size.y - 460;
                 bottom = scroll.y >= size.y - 460;
-                GUI.Label(new Rect(700, 20, 100, 100), $"size: {size.y}\nscroll: {scroll.y}\nbottom: {bottom}");
                 scroll = GUI.BeginScrollView(new Rect(5, 20, 785, 460), scroll, new Rect(0, 0, size.x, size.y));
                 GUI.Label(new Rect(0, 0, size.x, size.y), KMP_Console.Content);
                 GUI.EndScrollView();
