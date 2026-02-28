@@ -124,12 +124,6 @@ namespace KarlsonMP
                     break;
                 }
             }
-            yield return new WaitForSeconds(0.1f);
-            PostLoad();
-        }
-
-        private static void PostLoad()
-        {
         }
     }
 
@@ -182,12 +176,6 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(Timer), "Update")]
     public class Hook_Timer_Update
     {
-        public static void update(Timer instance)
-        {
-            if (instance.text.gameObject.activeSelf)
-                instance.text.gameObject.SetActive(false);
-        }
-
         // for some reason the timer sometimes remains active.
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -257,15 +245,6 @@ namespace KarlsonMP
 
                 new CodeInstruction(OpCodes.Ret).WithLabels(ret)
             };
-        }
-        public static bool Prefix()
-        {
-            if (!PlaytimeLogic.suicided)
-            {
-                ClientSend.Damage(NetworkManager.client.Id, 100); // suicide
-                PlaytimeLogic.suicided = true;
-            }
-            return false;
         }
     }
 
@@ -361,6 +340,7 @@ namespace KarlsonMP
                 ClientSend.Pickup(data.id);
             }
         }
+        // here we forward the call to our native function since it's easier than writing il code for it.
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             _ = instructions; // make compiler happy
