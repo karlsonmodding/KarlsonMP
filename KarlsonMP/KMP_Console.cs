@@ -43,6 +43,18 @@ namespace KarlsonMP
         public static implicit operator ushort(CV_ushort c) => c.Value;
     }
 
+    public class CV_string : ConVar
+    {
+        public string Value;
+        public CV_string(string value)
+        {
+            Value = value;
+        }
+        public override string GetValue() => Value;
+        public override void SetValue(string input) => Value = input;
+        public static implicit operator string(CV_string c) => c.Value;
+    }
+
     public static class KMP_Console
     {
         public static void Log(string message) => Log(message, false);
@@ -66,9 +78,9 @@ namespace KarlsonMP
             Log(commandString, true);
             string[] args = commandString.Split(' ');
             string label = args[0];
-            if(commands.ContainsKey(label))
+            if (commands.ContainsKey(label))
                 commands[label](args);
-            else if(convars.ContainsKey(label))
+            else if (convars.ContainsKey(label))
                 convars[label].Exec(args);
             else
                 Log("<color=red>Unknwon command</color> " + label + ". Try running <color=yellow>cmds</color> for a list of commands.", true);
@@ -76,9 +88,10 @@ namespace KarlsonMP
 
         public static void OnUpdate()
         {
-            foreach(var key in binds.Keys)
+            foreach (var key in binds.Keys)
                 if (Input.GetKeyDown(key))
-                    _processCommand(binds[key]);
+                    try { _processCommand(binds[key]); } catch { }
+
         }
 
         static bool cfg_ran = false;
@@ -89,7 +102,7 @@ namespace KarlsonMP
             if (!File.Exists(Path.Combine(Loader.KMP_ROOT, "autoexec.txt"))) return;
             Log("Running 'autoexec.txt'", true);
             foreach (var line in File.ReadAllLines(Path.Combine(Loader.KMP_ROOT, "autoexec.txt")))
-                _processCommand(line.Trim());
+                try { _processCommand(line.Trim()); } catch { }
         }
     }
 }

@@ -19,6 +19,7 @@ namespace KarlsonMP
             damageReport.Add(text);
         }
 
+        public static _feedItem pin = null;
         private static readonly List<_feedItem> feed = new List<_feedItem>();
         private static readonly List<_feedItem> damageReport = new List<_feedItem>();
 
@@ -35,7 +36,7 @@ namespace KarlsonMP
                 center.normal.textColor = Color.white;
             }
             int offY = 0;
-            foreach (var item in feed)
+            foreach (var item in pin != null ? feed.Prepend(pin) : feed)
             {
                 if (item.state < 25) SetGUIOpacity(item.state / 25f);
                 else if (item.state > 125) SetGUIOpacity((150 - item.state) / 25f);
@@ -58,6 +59,8 @@ namespace KarlsonMP
         private static void SetGUIOpacity(float a) => GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, a);
         public static void _advance()
         {
+            if (pin != null && pin.state++ >= 150)
+                pin = null;
             for (int i = 0; i < feed.Count; i++)
             {
                 feed[i].state++;
@@ -78,7 +81,7 @@ namespace KarlsonMP
             }
         }
 
-        private class _feedItem
+        public class _feedItem
         {
             public _feedItem(string _text)
             {

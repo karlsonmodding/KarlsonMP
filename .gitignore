@@ -9,3 +9,4 @@ build
 packages
 
 Gamemodes/Default/obj/Release/Default.csproj.AssemblyReference.cache
+*.user

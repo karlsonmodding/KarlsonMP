@@ -15,9 +15,9 @@ namespace KarlsonMP
         {
             entries.Clear();
             int count = message.GetInt();
-            while(count-- > 0)
+            while (count-- > 0)
                 entries.Add(new ScoreboardEntry(message.GetUShort(), message.GetString(), message.GetInt(), message.GetInt(), message.GetInt()));
-            entries = entries.OrderByDescending(x => x.score).ToList();
+            //entries = entries.OrderByDescending(x => x.score).ToList();
         }
 
         private static Texture2D _grayTx, _blackTx;
@@ -41,8 +41,8 @@ namespace KarlsonMP
 
         public static void OnGUI()
         {
-            if(!scoreboardOpened) return;
-            if(hAlign == null)
+            if (!scoreboardOpened) return;
+            if (hAlign == null)
             {
                 hAlign = new GUIStyle(GUI.skin.label)
                 {
@@ -59,17 +59,17 @@ namespace KarlsonMP
             GUI.Label(new Rect(basex + 450f, basey, 100f, 30f), "Score", hAlign);
             float yOff = 30f;
             bool alt = true;
-            foreach(var score in entries)
+            foreach (var score in entries)
             {
-                if(alt)
+                if (alt)
                     GUI.DrawTexture(new Rect(basex, basey + yOff, width, 30f), _grayTx);
                 else
                     GUI.DrawTexture(new Rect(basex, basey + yOff, width, 30f), _blackTx);
                 alt = !alt;
-                if(score.id != ushort.MaxValue)
+                if (score.id != ushort.MaxValue)
                 {
                     GUI.Label(new Rect(basex + 5f, basey + yOff, 50f, 30f), score.id.ToString(), hAlign);
-                    if(score.kills != int.MinValue)
+                    if (score.kills != int.MinValue)
                         GUI.Label(new Rect(basex + 350f, basey + yOff, 100f, 30f), score.kills.ToString(), hAlign);
                     if (score.deaths != int.MinValue)
                         GUI.Label(new Rect(basex + 400f, basey + yOff, 100f, 30f), score.deaths.ToString(), hAlign);

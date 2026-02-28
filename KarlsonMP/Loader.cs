@@ -29,12 +29,8 @@ namespace KarlsonMP
             Application.logMessageReceived += (a, b, c) =>
             {
                 if (c != LogType.Log)
-                    KMP_Console.Log(a + " " + b);
+                    KMP_Console.Log("[Unity] " + a + " " + b);
             };
-            
-            GameObject mhooks = new GameObject("MonoHooks");
-            monoHooks = mhooks.AddComponent<MonoHooks>();
-            UnityEngine.Object.DontDestroyOnLoad(mhooks);
 
             // harmony
             harmony = new Harmony("karlsonmp");
@@ -44,8 +40,16 @@ namespace KarlsonMP
             }
             catch (Exception e)
             {
-                KMP_Console.Log(e.ToString());
+                KMP_Console.Log("[Harmony] " + e.ToString());
+                new GameObject("LoaderError").AddComponent<LoaderError>().message
+                    = "<size=35><color=red>Failed to apply Harmony patches:</color></size>\n" + e.ToString() +
+                    "\n\n<size=24>Your Karlson's <b>Assembly-CSharp.dll</b> may be modified.\nTry reinstalling that file or Karlson entirely.</size>";
+                return;
             }
+
+            GameObject mhooks = new GameObject("MonoHooks");
+            monoHooks = mhooks.AddComponent<MonoHooks>();
+            UnityEngine.Object.DontDestroyOnLoad(mhooks);
 
             // register console commands
             KMP_Console.commands.Add("fpslimit", (args) =>
@@ -78,7 +82,7 @@ namespace KarlsonMP
             {
                 if (args.Length <= 1)
                 {
-                    KMP_Console.Log("say <text>", true);
+                    KMP_Console.Log("say [text]", true);
                     return;
                 }
                 ClientSend.ChatMessage(string.Join(" ", args.Skip(1)));
@@ -92,13 +96,13 @@ namespace KarlsonMP
                 }
                 if (KMP_Console.binds.ContainsKey(args[1]))
                     KMP_Console.binds.Remove(args[1]);
-                if(args.Length > 2)
+                if (args.Length > 2)
                     KMP_Console.binds.Add(args[1], string.Join(" ", args.Skip(2)));
             });
 
             KMP_Console.commands.Add("show", (args) =>
             {
-                if(args.Length != 3)
+                if (args.Length != 3)
                 {
                     KMP_Console.Log("show [fps|speed] [0|1]", true);
                     return;
@@ -110,9 +114,9 @@ namespace KarlsonMP
             });
             KMP_Console.commands.Add("crosshair", (args) =>
             {
-                if(args.Length != 3)
+                if (args.Length != 3)
                 {
-                    KMP_Console.Log("crosshair [len|gap|thick|hitmarker|damage] [value]");
+                    KMP_Console.Log("crosshair [len|gap|thick|hitmarker|damage] [value]", true);
                     return;
                 }
                 if (args[1] == "len")
@@ -126,6 +130,18 @@ namespace KarlsonMP
                 if (args[1] == "damage")
                     Inventory.ShowDamage = args[2] == "1";
             });
+
+            KMP_Console.commands.Add("connect", (args) =>
+            {
+                if (args.Length != 2)
+                {
+                    KMP_Console.Log("connect [address]", true);
+                    return;
+                }
+                ServerBrowser.Connect(args[1]);
+            });
+            KMP_Console.commands.Add("disconnect", (args) => PlaytimeLogic.DisconnectToBrowser());
+            KMP_Console.commands.Add("exit", (args) => Application.Quit());
 
             // convars
             KMP_Console.convars.Add("cl_interp", KEngine.cl_interp);
@@ -156,6 +172,18 @@ namespace KarlsonMP
             return addrs.FirstOrDefault(addr => addr.AddressFamily == favoredFamily)
                    ??
                    addrs.FirstOrDefault();
+        }
+
+        public class LoaderError : MonoBehaviour
+        {
+            public string message;
+            public void OnGUI()
+            {
+                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.blackTexture);
+                GUI.Label(new Rect(0, 0, Screen.width, Screen.height), message);
+                if (GUI.Button(new Rect(Screen.width - 105, Screen.height - 55, 100, 50), "Exit"))
+                    Application.Quit();
+            }
         }
     }
 }

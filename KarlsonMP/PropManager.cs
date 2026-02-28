@@ -27,7 +27,6 @@ namespace KarlsonMP
 
         public static void DestroyProp(int id)
         {
-            KMP_Console.Log("destroy prop id " + id);
             UnityEngine.Object.Destroy(activeProps[id].go);
             activeProps.Remove(id);
         }
@@ -44,7 +43,7 @@ namespace KarlsonMP
 
         public static void _onupdate()
         {
-            foreach(var prop in activeProps)
+            foreach (var prop in activeProps)
             {
                 if (prop.Value.playerid == 0) continue; // prop not linked to player
                 var target = PlaytimeLogic.players.FirstOrDefault(x => x.id == prop.Value.playerid)?.player ?? null;

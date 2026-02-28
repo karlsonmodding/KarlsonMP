@@ -48,9 +48,9 @@ namespace ServerKMP
             GamemodeManager.Init();
 
             DateTime _nextLoop = DateTime.Now;
-            while(serverRunning)
+            while (serverRunning)
             {
-                while(_nextLoop < DateTime.Now)
+                while (_nextLoop < DateTime.Now)
                 {
                     Update();
                     GamemodeManager.SafeCall(GamemodeManager.currentGamemode!.ServerTick);
@@ -67,7 +67,7 @@ namespace ServerKMP
                     KMP_TaskScheduler.ClearAndAddTasks();
 
                     _nextLoop = _nextLoop.AddMilliseconds(Config.MSPT);
-                    if(_nextLoop > DateTime.Now)
+                    if (_nextLoop > DateTime.Now)
                         Thread.Sleep(_nextLoop - DateTime.Now); // don't overload server
                 }
             }

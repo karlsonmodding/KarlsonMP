@@ -16,18 +16,17 @@ namespace KarlsonMP
     {
         public static bool paused = false;
         public static int hp = 100;
-        public static int spectatingId { get; private set; } = 0;
+        public static int spectatingId { get; private set; } = -1;
         public static bool showNametags = true;
         public static bool suicided = false;
         public static bool enableCollisions = true;
-        public static bool InLevel = false;
-        public static float specOffset = 0f;
+        public static float specOffset = 10f;
         public static float nametagDistance = 50f;
         public static void StartSpectate(int targetId)
         {
             // set dead
             PlayerMovement.Instance.dead = true;
-            specOffset = 10f;
+            //specOffset = 10f;
             spectatingId = targetId;
             GameObject.Find("Camera/Main Camera/GunCam").SetActive(false);
             PlayerMovement.Instance.GetPlayerCollider().enabled = false;
@@ -36,7 +35,7 @@ namespace KarlsonMP
         }
         public static void ExitSpectate()
         {
-            spectatingId = 0;
+            spectatingId = -1;
             GameObject.Find("Camera/Main Camera/GunCam").SetActive(true);
             PlayerMovement.Instance.GetPlayerCollider().enabled = true;
             PlayerMovement.Instance.rb.isKinematic = false;
@@ -57,15 +56,18 @@ namespace KarlsonMP
 
         public static void Update()
         {
-            if (NetworkManager.client == null || !NetworkManager.client.IsConnected)
+            if (Input.GetKeyDown(KeyCode.BackQuote))
+                console.show = !console.show;
+
+            if (NetworkManager.client == null || !NetworkManager.client.IsConnected || !PlayerMovement.Instance)
                 return;
 
-            if(ClientHandle.PlayerList)
+            if (ClientHandle.PlayerList)
                 KEngine.RenderFrame();
 
             if (Input.GetKeyDown(KeyCode.F5))
                 NetStatsOpen = !NetStatsOpen;
-            if(NetStatsOpen)
+            if (NetStatsOpen)
             {
                 NetStatsTimeSinceLastUpdate += Time.deltaTime;
                 if (NetStatsTimeSinceLastUpdate >= 0.5f)
@@ -80,9 +82,9 @@ namespace KarlsonMP
                 }
             }
 
-            if (spectatingId != 0)
+            if (spectatingId != -1)
             {
-                if(!paused)
+                if (!paused)
                 {
                     if (Input.mouseScrollDelta.y > 0 && specOffset > 0)
                         specOffset -= 1f;
@@ -138,7 +140,7 @@ namespace KarlsonMP
                 else
                     ForcePause(!paused);
             }
-            if(!paused)
+            if (!paused)
             {
                 if (Input.GetKeyDown(KeyCode.Y) || Input.GetKeyDown(KeyCode.Return))
                     chatOpened = true;
@@ -148,8 +150,6 @@ namespace KarlsonMP
             {
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
-                if (Input.GetKeyDown(KeyCode.BackQuote))
-                    console.show = !console.show;
             }
             else
             {
@@ -179,7 +179,7 @@ namespace KarlsonMP
                 }
             }
 
-            if(spectatingId == 0)
+            if (spectatingId == -1)
                 ClientSend.PositionData();
         }
 
@@ -240,7 +240,7 @@ namespace KarlsonMP
         public static void AddChat(string msg)
         {
             chat += "\n" + msg;
-            while(chat.Split('\n').Length > 15)
+            while (chat.Split('\n').Length > 15)
                 chat = chat.Substring(chat.IndexOf("\n") + 1);
             chat_stripped = StripColor(chat);
         }
@@ -261,29 +261,38 @@ namespace KarlsonMP
 
             console = new GuiWindow("console", 50, 50, 800, 500, () =>
             {
+                Vector2 scroll;
+                bool bottom;
+                float oldY;
+                (scroll, bottom, oldY) = ((Vector2, bool, float))console.storage;
                 if (GUI.Button(new Rect(750, 0, 50, 20), "Close")) console.show = false;
                 Vector2 size = GUI.skin.label.CalcSize(new GUIContent(KMP_Console.Content));
-                console.storage = GUI.BeginScrollView(new Rect(5, 20, 785, 460), (Vector2)console.storage, new Rect(0, 0, size.x, size.y));
+                if (bottom && size.y > oldY)
+                    scroll.y = size.y - 460;
+                bottom = scroll.y >= size.y - 460;
+                GUI.Label(new Rect(700, 20, 100, 100), $"size: {size.y}\nscroll: {scroll.y}\nbottom: {bottom}");
+                scroll = GUI.BeginScrollView(new Rect(5, 20, 785, 460), scroll, new Rect(0, 0, size.x, size.y));
                 GUI.Label(new Rect(0, 0, size.x, size.y), KMP_Console.Content);
                 GUI.EndScrollView();
                 GUI.SetNextControlName("ConsoleInput");
                 ConsoleInput = GUI.TextArea(new Rect(0, 480, 800, 20), ConsoleInput);
                 GUI.FocusControl("ConsoleInput");
-                if(ConsoleInput.Contains("\n"))
+                if (ConsoleInput.Contains("\n"))
                 {
-                    KMP_Console._processCommand(ConsoleInput.Replace("\n", ""));
+                    try { KMP_Console._processCommand(ConsoleInput.Replace("\n", "")); } catch { }
                     ConsoleInput = "";
                 }
-                if(ConsoleInput.Contains("`"))
+                if (ConsoleInput.Contains("`"))
                 {
                     ConsoleInput = ConsoleInput.Replace("`", "");
                     console.show = !console.show;
                 }
-            }, new Vector2(0, 0));
+                console.storage = (scroll, bottom, size.y);
+            }, (new Vector2(0, 0), true, 0f));
 
             settings = new GuiWindow("settings", Screen.width / 2 - 220, Screen.height / 2 - 112, 440, 225, () =>
             {
-                if(!(bool)settings.storage && GameState.Instance != null)
+                if (!(bool)settings.storage && GameState.Instance != null)
                 {
                     settings_graphics = new GuiSwitch(GameState.Instance.SetGraphics, GameState.Instance.GetGraphics(), new Rect(5f, 65f, 100f, 20f), "Good", "Fast");
                     settings_motion_blur = new GuiSwitch(GameState.Instance.SetBlur, GameState.Instance.blur, new Rect(5f, 110f, 100f, 20f), "On", "Off");
@@ -307,7 +316,7 @@ namespace KarlsonMP
 
                 if (GUI.Button(new Rect(390, 0, 50, 20), "Close")) settings.show = false;
                 settings_tab = GUI.Toolbar(new Rect(5f, 20f, 430f, 20f), settings_tab, settings_tabs);
-                if(settings_tab == 0)
+                if (settings_tab == 0)
                 {
                     GUI.Label(new Rect(5f, 45f, 100f, 20f), "<b>Graphics</b>");
                     settings_graphics.draw();
@@ -337,7 +346,7 @@ namespace KarlsonMP
                     settings_speed_on.draw();
                     showDebug = GUI.Toggle(new Rect(285f, 85f, 130f, 20f), showDebug, "Show RTT (ping)");
                 }
-                else if(settings_tab == 1)
+                else if (settings_tab == 1)
                 {
                     GUI.Label(new Rect(5f, 45f, 150f, 20f), "<b>Crosshair Thickness</b>");
                     crosshair_thick.draw();
@@ -360,9 +369,25 @@ namespace KarlsonMP
                 if (Event.current.type == EventType.KeyDown && Event.current.character == '\n')
                     PasswordDialog.SendPassword();
             }, null, _show: true);
+
+            gray = new Texture2D(1, 1);
+            gray.SetPixel(0, 0, Color.gray);
+            gray.Apply();
+            white = new Texture2D(1, 1);
+            white.SetPixel(0, 0, Color.white);
+            white.Apply();
+
+            download = new GuiWindow("Download progress", Screen.width / 2 - 150, Screen.height - 70, 300, 70, () =>
+            {
+                var dlp = FileHandler.GetDownloadProgress();
+                GUI.Label(new Rect(5f, 20f, 300, 100), $"Remaining files: {dlp.Item2}\nCurrent file: <b><color=yellow>{dlp.Item3}</color></b> ({dlp.Item1 * 100:0.0}%)");
+                GUI.DrawTexture(new Rect(5f, 58f, 290f, 5f), gray);
+                GUI.DrawTexture(new Rect(5f, 58f, 290f * dlp.Item1, 5f), white);
+            }, null, _show: true);
         }
 
-        static GuiWindow settings, console, password;
+        static Texture2D gray, white;
+        static GuiWindow settings, console, password, download;
         static GuiSwitch settings_graphics, settings_motion_blur, settings_cam_shake;
         static GuiSliderAndTextbox settings_sensitivity, settings_volume, settings_music, settings_fov;
         public static GuiReflectionCheckbox settings_fps_on, settings_speed_on;
@@ -374,7 +399,7 @@ namespace KarlsonMP
         {
             public static void SetThick(float val)
             {
-                if(crosshairRef == null)
+                if (crosshairRef == null)
                     crosshairRef = GameObject.Find("/Managers (1)/UI/Game/Crosshair");
                 val /= 100;
                 float len = crosshairRef.transform.GetChild(0).localScale.x;
@@ -406,7 +431,7 @@ namespace KarlsonMP
 
         static string StripColor(string s)
         {
-            while(s.Contains("<color"))
+            while (s.Contains("<color"))
             {
                 int idx = s.IndexOf("<color");
                 int close = s.IndexOf('>', idx);
@@ -421,9 +446,15 @@ namespace KarlsonMP
         {
             if (PasswordDialog.Opened)
                 password.draw();
+
+            if (FileHandler.downloadQueue.Count > 0 || FileHandler.Downloading)
+                download.draw();
+
+            console.draw();
+
             if (!ClientHandle.PlayerList) return;
             // hp
-            if(spectatingId == 0 && hp > 0)
+            if (spectatingId == -1 && hp > 0)
             {
                 GUI.Label(new Rect(50f, Screen.height - 110f, 150f, 70f), $"<size=50><color=green><b>+</b></color> {hp}</size>");
                 GUI.DrawTexture(new Rect(50f, Screen.height - 45f, 135f, 20f), hpBar_black);
@@ -447,11 +478,11 @@ namespace KarlsonMP
                 textSize.x += 10f;
                 GUI.Label(new Rect(pos.x - textSize.x / 2, (Screen.height - pos.y) - textSize.y / 2, textSize.x, textSize.y), text, nameStyle);
             }
-            
+
             if (showDebug)
                 GUI.Label(new Rect(Screen.width - 78f, Screen.height - 35f, 100f, 20f), $"<color=white>RTT: {NetworkManager.client.SmoothRTT}</color>");
 
-            if(NetStatsOpen)
+            if (NetStatsOpen)
             {
                 GUI.Label(new Rect(5f, 25f, Screen.width, Screen.height), $"<size=25>[Network Statistics]\n" +
                     $"Received messages: {NetworkManager.client.Connection.Metrics.MessagesIn} ({NetworkManager.client.Connection.Metrics.BytesIn} bytes)\n" +
@@ -471,7 +502,7 @@ namespace KarlsonMP
             {
                 // chat
                 var sz = GUI.skin.label.CalcSize(new GUIContent(chat));
-                foreach((int i, int j) in chatOutline)
+                foreach ((int i, int j) in chatOutline)
                     GUI.Label(new Rect(5 + i, 25 + j, sz.x + 10, sz.y + 10), "<color=black>" + chat_stripped + "</color>");
                 GUI.Label(new Rect(5f, 25f, sz.x + 10, sz.y + 10), chat);
                 if (chatOpened)
@@ -506,12 +537,11 @@ namespace KarlsonMP
             if (pauseState > 4) if (GUI.Button(new Rect(50, Screen.height - 150, 120, 20), "Console")) console.show = !console.show;
             if (pauseState > 5) GUI.Label(new Rect(50, Screen.height - 185, 120, 40), watermark.Substring(0, pauseState - 5));
 
-            console.draw();
             settings.draw();
         }
         public static List<Player> players = new List<Player>();
 
-        public static void DisconnectToBrowser()
+        public static void Disconnect()
         {
             try
             {
@@ -532,10 +562,16 @@ namespace KarlsonMP
             Inventory.selfBulletColor = Color.blue;
             Physics.IgnoreLayerCollision(8, 8, false);
             Physics.IgnoreLayerCollision(8, 12, false);
-            InLevel = false;
             CrouchFixes.Reset();
             KTickManager.Reset();
             nametagDistance = 50f;
+            FileHandler.Reset();
+        }
+
+        public static void DisconnectToBrowser()
+        {
+            Disconnect();
+
             Game.Instance.MainMenu();
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;

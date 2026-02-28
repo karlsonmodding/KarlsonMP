@@ -115,7 +115,7 @@ namespace Race
                 if (args[0] == "!w")
                 {
                     GamemodeEntry.players[chat.fromId].weapons = !GamemodeEntry.players[chat.fromId].weapons;
-                    if(GamemodeEntry.players[chat.fromId].weapons)
+                    if (GamemodeEntry.players[chat.fromId].weapons)
                     {
                         GamemodeEntry.players[chat.fromId].GiveWeapons();
                         new MessageServerToClient.MessageChatMessage("Weapons: <color=green>enabled</color>.").Send(chat.fromId);
@@ -154,13 +154,13 @@ namespace Race
                 }
                 if (args[0] == "!spec")
                 {
-                    if(args.Length != 2)
+                    if (args.Length != 2)
                     {
                         new MessageServerToClient.MessageChatMessage("!spec <id>").Send(chat.fromId);
                         return;
                     }
                     ushort target;
-                    if(!ushort.TryParse(args[1], out target) || target == chat.fromId)
+                    if (!ushort.TryParse(args[1], out target) || target == chat.fromId)
                     {
                         new MessageServerToClient.MessageChatMessage("Invalid ID!").Send(chat.fromId);
                         return;
@@ -175,7 +175,7 @@ namespace Race
                     // for all players that were spectating me, enter them spec on my new target
                     foreach (var p in GamemodeEntry.players)
                     {
-                        if(p.Value.spectating == chat.fromId)
+                        if (p.Value.spectating == chat.fromId)
                         {
                             new MessageServerToClient.MessageChatMessage($"{GamemodeEntry.players[chat.fromId].username} is now spectating {GamemodeEntry.players[target].username} (ID {target})").Send(p.Key);
                             p.Value.EnterSpectate(target);

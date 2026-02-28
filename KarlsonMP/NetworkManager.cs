@@ -28,7 +28,7 @@ namespace KarlsonMP
             username = _username;
             KillFeedGUI.AddText($"Connecting to {address}");
             RiptideLogger.Initialize(KMP_Console.Log, false);
-            client = new Client("Riptide"); // logger name
+            client = new Client("RiptideClient"); // logger name
             client.Connect(address);
             client.ConnectionFailed += FailedToConnect;
             client.Disconnected += DidDisconnect;
@@ -38,7 +38,7 @@ namespace KarlsonMP
         {
             if (client == null) return;
             client.Disconnected -= DidDisconnect;
-            if(!client.IsNotConnected)
+            if (!client.IsNotConnected)
                 client.Disconnect();
         }
 
@@ -49,7 +49,7 @@ namespace KarlsonMP
 
         private static void DidDisconnect(object sender, DisconnectedEventArgs e)
         {
-            if(e.Message == null)
+            if (e.Message == null)
                 MonoHooks.ShowDialog("KarlsonMP reborn", "Server closed the connection", "Go to browser", "Exit game", () => { PlaytimeLogic.DisconnectToBrowser(); }, () => { Application.Quit(); });
             else
                 MonoHooks.ShowDialog("KarlsonMP reborn", "Server closed the connection:\n\n" + e.Message.GetString(), "Go to browser", "Exit game", () => { PlaytimeLogic.DisconnectToBrowser(); }, () => { Application.Quit(); });
@@ -212,7 +212,7 @@ namespace KarlsonMP
         {
             bool join = message.GetBool();
             ushort id = message.GetUShort();
-            if(!join)
+            if (!join)
             {
                 Player _p = PlaytimeLogic.players.Find(p => p.id == id);
                 if (_p == null) return; // player doesn't exist
@@ -233,7 +233,7 @@ namespace KarlsonMP
             ulong Tick = message.GetULong();
             ushort count = message.GetUShort();
             List<KObject> objects = new List<KObject>();
-            while(count-- > 0)
+            while (count-- > 0)
                 objects.Add(new KObject(message.GetUShort(), message.GetVector3(), message.GetVector2()));
             KTickManager.RegisterFrame(new KTick(Tick, objects));
         }
@@ -243,7 +243,7 @@ namespace KarlsonMP
         {
             if (!PlayerList) return;
             ushort count = message.GetUShort();
-            while(count-- > 0)
+            while (count-- > 0)
             {
                 var pid = message.GetUShort();
                 var p = PlaytimeLogic.players.Where(x => x.id == pid).FirstOrDefault();
@@ -285,12 +285,12 @@ namespace KarlsonMP
             var vel = message.GetSerializable<MessageExtensions.oVector3>();
             if (pos.HasValue())
                 PlayerMovement.Instance.transform.position = pos.GetValue();
-            if(rot.HasValue())
+            if (rot.HasValue())
             {
                 Camera.main.transform.rotation = Quaternion.Euler(rot.GetValue().x, rot.GetValue().y, 0f);
                 PlayerMovement.Instance.orientation.transform.rotation = Quaternion.Euler(0f, rot.GetValue().y, 0f);
             }
-            if(vel.HasValue())
+            if (vel.HasValue())
                 PlayerMovement.Instance.rb.velocity = vel.GetValue();
         }
 
@@ -347,7 +347,7 @@ namespace KarlsonMP
         [MessageHandler(Packet_S2C.respawn)]
         public static void Respawn(Message message)
         {
-            if (PlaytimeLogic.spectatingId != 0)
+            if (PlaytimeLogic.spectatingId != -1)
                 PlaytimeLogic.ExitSpectate();
             PlayerMovement.Instance.dead = false;
             PlaytimeLogic.suicided = false;
@@ -379,7 +379,7 @@ namespace KarlsonMP
             if (who == NetworkManager.client.Id) return;
             string color = message.GetString();
             Texture2D tex;
-            switch(color)
+            switch (color)
             {
                 case "yellow":
                     tex = KME_LevelPlayer.gameTex[5];
@@ -442,11 +442,11 @@ namespace KarlsonMP
         {
             bool toggle = message.GetBool();
             bool list = message.GetBool();
-            if(list)
+            if (list)
             {
                 int count = message.GetInt();
                 // player list toggle
-                while(count-- > 0)
+                while (count-- > 0)
                 {
                     ushort pid = message.GetUShort();
                     var p = (from x in PlaytimeLogic.players where x.id == pid select x).FirstOrDefault();
@@ -467,7 +467,7 @@ namespace KarlsonMP
         public static void GiveWeapon(Message message)
         {
             bool remove = message.GetBool();
-            if(remove)
+            if (remove)
             {
                 Inventory.RemoveWeapon(message.GetInt());
                 return;
@@ -521,11 +521,11 @@ namespace KarlsonMP
         public static void Gamerules(Message message)
         {
             int count = message.GetInt();
-            while(count-- > 0)
+            while (count-- > 0)
             {
                 string key = message.GetString();
                 string value = message.GetString();
-                switch(key)
+                switch (key)
                 {
                     case "CrouchFixes":
                         CrouchFixes.Enabled = value == "1";

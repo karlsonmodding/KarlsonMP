@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -123,7 +124,7 @@ namespace KarlsonMP
         {
             bool oldValue = value;
             value = GUI.Toggle(pos, value, text);
-            if(value != oldValue)
+            if (value != oldValue)
                 field.SetValue(field_instance, value);
         }
     }

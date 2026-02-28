@@ -45,10 +45,11 @@ namespace KarlsonMP
                 }
             }
             gameTex = temp.ToArray();
-            if (gameTex.Length != 13) KMP_Console.Log("<color=red>Invalid game texture array. Expected 13 items, got " + gameTex.Length + "</color>");
-            foreach (var t in gameTex)
+            if (gameTex.Length != 13)
             {
-                KMP_Console.Log(t.name);
+                KMP_Console.Log("[Bootstrap] <color=red>Invalid game texture array. Expected 13 items, got " + gameTex.Length + ":</color>");
+                foreach (var t in gameTex)
+                    KMP_Console.Log(gameTex.Select(x => x.name).Join());
             }
             KarlsonMapEditor.LevelLoader.Main.Init(new PrefabProvider(), log => KMP_Console.Log("[KME] " + log), gameTex);
         }
@@ -68,16 +69,16 @@ namespace KarlsonMP
                     }
                     catch (Exception ex2)
                     {
-                        KillFeedGUI.AddText("Failed to load map.\nTrying legacy format.");
-                        KMP_Console.Log(ex2.ToString());
+                        KillFeedGUI.AddText("<color=yellow>Failed to load map.\nTrying legacy format.</color>");
+                        KMP_Console.Log("[KME LevelPlayer] " + ex2.ToString());
                         KarlsonMapEditor.LevelLoader.LevelPlayer.LoadLevel(name, data, compressed: false, post_load: () => ClientSend.RequestScene());
                     }
                 }
             }
             catch (Exception ex)
             {
-                KillFeedGUI.AddText("Failed to load map.\nReturning to browser.");
-                KMP_Console.Log(ex.ToString());
+                KillFeedGUI.AddText("<color=red>Failed to load map.\nReturning to browser.</color>");
+                KMP_Console.Log("[KME LevelPlayer] " + ex.ToString());
                 PlaytimeLogic.DisconnectToBrowser();
             }
         }

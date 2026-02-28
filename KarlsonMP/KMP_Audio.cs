@@ -15,7 +15,7 @@ namespace KarlsonMP
         public static List<AudioSource> sources = new List<AudioSource>();
         public static void Initialize(AssetBundle bundle)
         {
-            foreach(var c in clips)
+            foreach (var c in clips)
             {
                 var source = AudioManager.Instance.gameObject.AddComponent<AudioSource>();
                 var clip = bundle.LoadAsset<AudioClip>("assets/karlsonmp/sfx/" + c + ".mp3");
@@ -29,7 +29,6 @@ namespace KarlsonMP
                 source.bypassListenerEffects = true;
                 source.bypassReverbZones = true;
                 sources.Add(source);
-                KMP_Console.Log("Added custom sound: " + source.clip.name);
             }
         }
         public static void PlaySound(string name, float pitchVar = 0f) => PlaySoundDelayed(name, 0f, pitchVar);

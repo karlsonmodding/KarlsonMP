@@ -359,7 +359,7 @@ namespace ServerKMP.GamemodeApi
         }
         public class MessageHUDMessage : MessageBase_S2C
         {
-            public enum ScreenPos 
+            public enum ScreenPos
             {
                 TopCenter = 0,
                 AboveCrosshair,

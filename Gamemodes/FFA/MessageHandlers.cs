@@ -16,12 +16,12 @@ namespace FFA
         public static void Handshake(MessageClientToServer.MessageHandshake handshake)
         {
             // check for valid username
-            if(!Regex.IsMatch(handshake.username, "^[a-zA-Z0-9_\\.]+$"))
+            if (!Regex.IsMatch(handshake.username, "^[a-zA-Z0-9_\\.]+$"))
             {
                 NetManager.KickClient(handshake.fromId, "Invalid username. Please use only alphanumerical and '_', '.'.");
                 return;
             }
-            if(handshake.username.Length < 3 || handshake.username.Length > 32)
+            if (handshake.username.Length < 3 || handshake.username.Length > 32)
             {
                 NetManager.KickClient(handshake.fromId, "Invalid username. Username can only be 3-32 characters long.");
                 return;
@@ -37,7 +37,7 @@ namespace FFA
             // send playerjoin to all except client
             new MessageServerToClient.MessagePlayerJoinLeave(handshake.fromId, handshake.username).SendToAll(handshake.fromId);
             new MessageServerToClient.MessageKillFeed($"<color=green>({handshake.fromId}) {handshake.username} connected</color>").SendToAll(handshake.fromId);
-            
+
             // send player current map
             if (MapManager.currentMap!.isDefault) // default map, just send scene name
                 new MessageServerToClient.MessageMapChange(true, MapManager.currentMap.name, true).Send(handshake.fromId);
@@ -83,9 +83,9 @@ namespace FFA
             if (damage.damage < 0) return; // damage is negative. they are cheating
             // clamp hp to 0 (if damage is greater than health)
             GamemodeEntry.players[damage.victim].SetHP(Math.Max(0, GamemodeEntry.players[damage.victim].hp - damage.damage));
-            if(GamemodeEntry.players[damage.victim].hp == 0)
+            if (GamemodeEntry.players[damage.victim].hp == 0)
             { // victim died
-                if(damage.fromId != damage.victim)
+                if (damage.fromId != damage.victim)
                 { // if not suicide
                     GamemodeEntry.players[damage.fromId].kills++;
                     GamemodeEntry.players[damage.fromId].score++;
@@ -114,8 +114,8 @@ namespace FFA
                 GamemodeEntry.players[damage.victim].respawnTaskActive = true;
 
                 // check if there are any other people that were previously spectating our victim
-                foreach(var x in GamemodeEntry.players)
-                    if(x.Value.spectating == damage.victim)
+                foreach (var x in GamemodeEntry.players)
+                    if (x.Value.spectating == damage.victim)
                         x.Value.EnterSpectate(targetSpec == damage.victim ? x.Key : damage.fromId); // enter target spec (same story)
                 // here we don't need to worry about setting timer, because the respawnTask is still active, hence we're spectating
             }
@@ -128,7 +128,7 @@ namespace FFA
             // here you can add commands, like this:
             //if(chat.message.StartsWith("!")) ...
             // you will need to write your own command processor, keep that in mind
-            if(chat.message.StartsWith("!"))
+            if (chat.message.StartsWith("!"))
             {
                 var args = chat.message.Split(' ');
                 if (args[0] == "!rs")
@@ -139,7 +139,7 @@ namespace FFA
                 }
                 if (args[0] == "!admin")
                 {
-                    if(GamemodeEntry.players[chat.fromId].admin)
+                    if (GamemodeEntry.players[chat.fromId].admin)
                     {
                         new MessageServerToClient.MessageChatMessage("You are already an admin!").Send(chat.fromId);
                         return;
@@ -195,7 +195,7 @@ namespace FFA
             => Password((MessageClientToServer.MessagePassword)_base);
         public static void Password(MessageClientToServer.MessagePassword password)
         {
-            if(password.password != File.ReadAllText("adminpass"))
+            if (password.password != File.ReadAllText("adminpass"))
             {
                 NetManager.KickClient(password.fromId, "Invalid admin password.");
             }

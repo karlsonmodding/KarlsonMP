@@ -38,7 +38,7 @@ namespace ServerKMP
     {
         public static Dictionary<ushort, KPlayer> netObjects = new Dictionary<ushort, KPlayer>();
         public static ulong CurrentTick = 0;
-        
+
         public static void NextTick()
         {
             if (CurrentTick % 200 == 0)

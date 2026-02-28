@@ -15,7 +15,7 @@ namespace ServerKMP
         public static byte[] mapData = Array.Empty<byte>();
         public static byte[] GetMapPart(ushort part)
         {
-            if(mapData.Length == 0)
+            if (mapData.Length == 0)
                 return Array.Empty<byte>();
             var dataLeft = mapData.Skip(part * 1024);
             if (dataLeft.Count() >= 1024)

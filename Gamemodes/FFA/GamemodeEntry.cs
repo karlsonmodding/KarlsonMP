@@ -71,7 +71,7 @@ namespace FFA
                 new MessageServerToClient.MessageMapChange(false, MapManager.currentMap.name, MapManager.currentMap.isLegacy).SendToAll();
                 FileUploader.SendMapUploadRequest();
             }
-                
+
             NetworkManager.MOTD = Config.MOTD + " / FFA | Map " + MapManager.currentMap!.name;
         }
 

@@ -30,7 +30,7 @@ namespace KarlsonMP
             KarlsonMapEditor.LevelLoader.Main.Skybox.SixSided = bundle.LoadAsset<Material>("assets/kme/skyboxsixsided.mat");
             KarlsonMapEditor.LevelLoader.MaterialManager.defaultShader = bundle.LoadAsset<Shader>("assets/kme/standardvariants.shader");
 
-            KMP_Console.Log("monohooks start done");
+            KMP_Console.Log("[Bootstrap] monohooks loaded assets");
 
             GuiCtor();
             PlaytimeLogic.Start();

@@ -20,6 +20,7 @@ namespace KarlsonMP
             public static uint TotalSize;
             public static byte[] Hash;
         }
+        public static bool Downloading => CurrentFile.DownloadingFile;
         public static Dictionary<string, (uint, byte[])> downloadQueue = new Dictionary<string, (uint, byte[])>();
         public static Dictionary<string, byte[]> downloadedFiles = new Dictionary<string, byte[]>();
 
@@ -37,7 +38,7 @@ namespace KarlsonMP
             if (CurrentFile.DownloadingFile) return; // we are already downloading a file
             downloadQueue.Remove(dl.Key);
             // schedule next file to download
-            KMP_Console.Log($"Downloading file {dl.Key} ({dl.Value.Item1} bytes).");
+            KMP_Console.Log($"[FileHandler] Downloading file '{dl.Key}' ({dl.Value.Item1} bytes).");
             CurrentFile.FileName = dl.Key;
             CurrentFile.DownloadingFile = true;
             CurrentFile.data = new List<byte>();
@@ -64,31 +65,41 @@ namespace KarlsonMP
 
         public static void HandleFilePart(byte[] fileData)
         {
-            CurrentFile.data.AddRange(fileData);
-            if (CurrentFile.data.Count == CurrentFile.TotalSize)
+            if (fileData.Length > 0)
             {
-                CurrentFile.DownloadingFile = false;
-                var bytes = CurrentFile.data.ToArray();
-                if (CheckHash(bytes).SequenceEqual(CurrentFile.Hash))
+                CurrentFile.data.AddRange(fileData);
+                if (CurrentFile.data.Count == CurrentFile.TotalSize)
                 {
-                    KMP_Console.Log($"<color=green>Downloaded file {CurrentFile.FileName}.</color>");
-                    if(downloadedFiles.ContainsKey(CurrentFile.FileName))
-                        downloadedFiles[CurrentFile.FileName] = bytes;
-                    else
-                        downloadedFiles.Add(CurrentFile.FileName, bytes);
-                    OnFileReady(CurrentFile.FileName);
+                    CurrentFile.DownloadingFile = false;
+                    var bytes = CurrentFile.data.ToArray();
+                    if (CheckHash(bytes).SequenceEqual(CurrentFile.Hash))
+                    {
+                        KMP_Console.Log($"[FileHandler] <color=green>Downloaded file '{CurrentFile.FileName}'.</color>");
+                        if (downloadedFiles.ContainsKey(CurrentFile.FileName))
+                            downloadedFiles[CurrentFile.FileName] = bytes;
+                        else
+                            downloadedFiles.Add(CurrentFile.FileName, bytes);
+                        OnFileReady(CurrentFile.FileName);
+                        return;
+                    }
+                    KMP_Console.Log($"[FileHandler] <color=red>Downloaded file '{CurrentFile.FileName}' but hash is invalid.</color>");
+                    // invalid hash, re-schedule file
+                    if (downloadQueue.ContainsKey(CurrentFile.FileName))
+                        downloadQueue.Remove(CurrentFile.FileName);
+                    downloadQueue.Add(CurrentFile.FileName, (CurrentFile.TotalSize, CurrentFile.Hash));
+                    CurrentFile.DownloadingFile = false;
                     return;
                 }
-                KMP_Console.Log($"<color=red>Downloaded file {CurrentFile.FileName} but hash is invalid.</color>");
-                // invalid hash, re-schedule file
-                if(downloadQueue.ContainsKey(CurrentFile.FileName))
-                    downloadQueue.Remove(CurrentFile.FileName);
-                downloadQueue.Add(CurrentFile.FileName, (CurrentFile.TotalSize, CurrentFile.Hash));
-                return;
+                // download next part
+                ClientSend.FileData(CurrentFile.FileName, ++CurrentFile.CurrentPart);
             }
-            KMP_Console.Log($"Download progress <color=yellow>{CurrentFile.data.Count}/{CurrentFile.TotalSize}</color>.");
-            // download next part
-            ClientSend.FileData(CurrentFile.FileName, ++CurrentFile.CurrentPart);
+            else
+            {
+                KMP_Console.Log($"[FileHandler] <color=red>Download error: Server refused to give next part for file '{CurrentFile.FileName}'. Removing it from queue.</color>");
+                if (downloadQueue.ContainsKey(CurrentFile.FileName))
+                    downloadQueue.Remove(CurrentFile.FileName);
+                CurrentFile.DownloadingFile = false;
+            }
         }
 
         // called when a file requested by the server is ready (downloaded or cached)
@@ -100,6 +111,18 @@ namespace KarlsonMP
                 PlaytimeLogic.PrepareMapChange();
                 KME_LevelPlayer.LoadLevel(fileName, downloadedFiles[fileName], ClientHandle.RequestedMapLegacy);
             }
+        }
+
+        public static void Reset()
+        {
+            CurrentFile.DownloadingFile = false;
+            //downloadedFiles.Clear();
+            downloadQueue.Clear();
+        }
+
+        public static (float, int, string) GetDownloadProgress()
+        {
+            return ((float)CurrentFile.data.Count / CurrentFile.TotalSize, downloadQueue.Count, CurrentFile.FileName);
         }
     }
 }

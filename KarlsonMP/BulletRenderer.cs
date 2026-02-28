@@ -18,7 +18,7 @@ namespace KarlsonMP
         {
             // if not in level, don't do anything yet
             if (!ClientHandle.PlayerList) return;
-            if(hitEffect)
+            if (hitEffect)
             {
                 var ps = UnityEngine.Object.Instantiate(PrefabManager.Instance.bulletDestroy, to, Quaternion.identity).GetComponent<ParticleSystem>();
                 ps.transform.rotation = Quaternion.LookRotation((from - to) / (from - to).magnitude);
@@ -37,7 +37,7 @@ namespace KarlsonMP
             uint myBulletId = bulletId;
             IEnumerator DestroyBr()
             {
-                for(float m = 0.19f; m >= 0; m -= 0.01f)
+                for (float m = 0.19f; m >= 0; m -= 0.01f)
                 {
                     yield return new WaitForSeconds(0.02f);
                     lr.widthMultiplier = m;
@@ -50,7 +50,7 @@ namespace KarlsonMP
 
         public static void DeleteBullets()
         {
-            foreach(var b in activeBullets)
+            foreach (var b in activeBullets)
             {
                 Loader.monoHooks.StopCoroutine(b.Value.Item1);
                 UnityEngine.Object.Destroy(b.Value.Item2);

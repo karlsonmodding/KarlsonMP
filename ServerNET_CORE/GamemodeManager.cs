@@ -26,14 +26,14 @@ namespace ServerKMP
 
         public static void Init()
         {
-            if(!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "Gamemodes", $"{Config.GAMEMODE}.dll")))
+            if (!File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "Gamemodes", $"{Config.GAMEMODE}.dll")))
             {
                 Console.WriteLine($"[ERROR] Couldn't find gamemode {Config.GAMEMODE}.dll");
                 return;
             }
             var asm = AppDomain.CurrentDomain.Load(File.ReadAllBytes(Path.Combine(Directory.GetCurrentDirectory(), "Gamemodes", $"{Config.GAMEMODE}.dll")));
             var type = asm.GetTypes().Where(x => x.BaseType == typeof(GamemodeApi.Gamemode)).FirstOrDefault();
-            if(type == null)
+            if (type == null)
             {
                 Console.WriteLine("[ERROR] Couldn't find gamemode entrypoint");
                 return;

@@ -73,21 +73,21 @@ namespace KarlsonMP
                 {
                     (victim, dmg) = TraceBullet(___guntip);
                     if (dmg == 0f) continue;
-                    if(!damage.ContainsKey(victim))
+                    if (!damage.ContainsKey(victim))
                         damage.Add(victim, 0f);
                     damage[victim] += dmg;
                 }
-                    
+
                 weapons[CurrentWeapon].Magazine--;
 
                 if (damage.Count > 0)
                     Hitmarker();
 
                 // send damage report
-                foreach(var x in damage)
+                foreach (var x in damage)
                 {
                     ClientSend.Damage(x.Key, (int)Mathf.Floor(x.Value + 0.5f));
-                    if(ShowDamage && gamerule_ShowDamage)
+                    if (ShowDamage && gamerule_ShowDamage)
                         KillFeedGUI.DamageReport(((int)Mathf.Floor(x.Value + 0.5f)).ToString());
                 }
             }
@@ -112,7 +112,7 @@ namespace KarlsonMP
             hitmarker.transform.localPosition = Vector3.zero;
             hitmarker.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             // original crosshair settings for hitmarker
-            for(int i = 0; i < 4; ++i)
+            for (int i = 0; i < 4; ++i)
             {
                 hitmarker.transform.GetChild(i).localScale = new Vector3(0.0406f, 0.015f, 0.0336f);
                 if (i <= 1)
@@ -134,7 +134,7 @@ namespace KarlsonMP
             Loader.monoHooks.StartCoroutine(fadeHitmarker());
         }
 
-        private static (ushort,float) TraceBullet(Transform ___guntip)
+        private static (ushort, float) TraceBullet(Transform ___guntip)
         {
             ushort victim = 0;
             float damage = 0f;
@@ -210,7 +210,7 @@ namespace KarlsonMP
             if (importObj == null) return;
 
             weapons.Add(new Weapon(importObj, localScale, meshRotation, gunTip, viewOffset, soundName, recoil, attackSpeed, magazine, bulletCount, spread, cooldown, boostRecoil, maxDamage, damageDropoff, damageScaleByDist));
-            if(weapons.Count == 1)
+            if (weapons.Count == 1)
             {
                 // init weapons
                 weapons[0].WeaponObject.SetActive(true);
@@ -264,7 +264,7 @@ namespace KarlsonMP
         }
         public static void NextWeapon()
         {
-            if(weapons.Count == 0) return;
+            if (weapons.Count == 0) return;
             int idx = CurrentWeapon + 1;
             if (idx >= weapons.Count) idx = 0;
             SwitchWeapon(idx);
@@ -322,8 +322,8 @@ namespace KarlsonMP
         public static void Update()
         {
             if (weapons == null || weapons.Count == 0) return;
-            if(Input.GetKeyDown(KeyCode.R))
-                if(weapons[CurrentWeapon].ReloadTime == 0 && weapons[CurrentWeapon].Magazine < weapons[CurrentWeapon].MaxMagazine) // manual reload
+            if (Input.GetKeyDown(KeyCode.R))
+                if (weapons[CurrentWeapon].ReloadTime == 0 && weapons[CurrentWeapon].Magazine < weapons[CurrentWeapon].MaxMagazine) // manual reload
                 {
                     weapons[CurrentWeapon].ReloadTime = MaxReloadTime;
                     KMP_AudioManager.PlaySound("reload", 0.08f);
@@ -362,14 +362,13 @@ namespace KarlsonMP
         public static void GuiCtor(AssetBundle bundle)
         {
             ammoIcon = bundle.LoadAsset<Texture2D>("assets/karlsonmp/ammo_icon.png");
-            KMP_Console.Log(ammoIcon.name);
         }
 
         public static void OnGUI()
         {
             if (!ClientHandle.PlayerList) return;
             if (weapons.Count == 0) return;
-            if (PlaytimeLogic.spectatingId != 0) return;
+            if (PlaytimeLogic.spectatingId != -1) return;
             GUI.DrawTexture(new Rect(Screen.width - 100f, Screen.height - 100f, 50f, 50f), ammoIcon);
             GUI.Label(new Rect(Screen.width - 240f, Screen.height - 100f, 140f, 70f), $"<b><size=50><color=white>{weapons[CurrentWeapon].Magazine} </color></size><size=25><color=silver>/{weapons[CurrentWeapon].MaxMagazine}</color></size></b>");
         }

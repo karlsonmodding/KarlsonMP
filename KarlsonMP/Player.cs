@@ -75,7 +75,7 @@ namespace KarlsonMP
             }
             catch (System.Exception e)
             {
-                KMP_Console.Log(e.ToString());
+                KMP_Console.Log("[Player] " + e.ToString());
             }
             nametagShown = PlaytimeLogic.showNametags;
         }
@@ -104,7 +104,7 @@ namespace KarlsonMP
             player.GetComponent<AnimController>().isCrouched = crouch;
             player.GetComponent<AnimController>().isMoving = moving;
             player.GetComponent<AnimController>().isGrounded = grounded;
-            
+
             // if not knife
             Transform shoulderL = player.transform.Find("Armature/Hips.Control/Hips/Waist/Torso/LeftShoulderJoint/Shoulder.L");
             Transform shoulderR = player.transform.Find("Armature/Hips.Control/Hips/Waist/Torso/RightShoulderJoint/Shoulder.R");

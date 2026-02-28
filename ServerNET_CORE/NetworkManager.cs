@@ -156,12 +156,17 @@ namespace ServerKMP
         [MessageHandler(Packet_C2S.position)]
         public static void PositionData(ushort from, Message message)
         {
+            if (!TickManager.netObjects.TryGetValue(from, out KPlayer? value))
+            {
+                NetManager.KickClient(from, "Bad packet");
+                return;
+            }
             var msg = new MessageClientToServer.MessagePositionData(from, message);
-            TickManager.netObjects[from].pos = msg.position;
-            TickManager.netObjects[from].rot = msg.rotation;
-            TickManager.netObjects[from].crouching = msg.crouching;
-            TickManager.netObjects[from].grounded = msg.grounded;
-            TickManager.netObjects[from].moving = msg.moving;
+            value.pos = msg.position;
+            value.rot = msg.rotation;
+            value.crouching = msg.crouching;
+            value.grounded = msg.grounded;
+            value.moving = msg.moving;
             GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(msg));
         }
         [MessageHandler(Packet_C2S.requestScene)]
@@ -182,12 +187,15 @@ namespace ServerKMP
         [MessageHandler(Packet_C2S.password)]
         public static void Password(ushort from, Message message)
         {
-            if (!NetworkManager.passwordEncryption.ContainsKey(from))
-                return; // bad packet
+            if (!NetworkManager.passwordEncryption.TryGetValue(from, out RSACryptoServiceProvider? value))
+            {
+                NetManager.KickClient(from, "Bad packet");
+                return;
+            }
             byte[] pw_enc = message.GetBytes();
             if (pw_enc.Length == 0)
             {
-                NetworkManager.passwordEncryption[from].Dispose();
+                value.Dispose();
                 NetworkManager.passwordEncryption.Remove(from);
                 GamemodeManager.SafeCall(() => GamemodeManager.currentGamemode!.ProcessMessage(new MessageClientToServer.MessagePassword(from, "")));
                 return;
@@ -206,7 +214,7 @@ namespace ServerKMP
             // rn we only allow downloading of the map
             if (fileName != MapManager.currentMap!.name)
             {
-                new MessageServerToClient.MessageFilePart(Array.Empty<byte>()).Send(from);
+                new MessageServerToClient.MessageFilePart([]).Send(from);
                 return;
             }
             new MessageServerToClient.MessageFilePart(FileUploader.GetMapPart(message.GetUShort())).Send(from);

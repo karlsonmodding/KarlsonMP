@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -27,9 +28,9 @@ namespace KarlsonMP
 
         private static void _scene(Scene scene, LoadSceneMode mode)
         {
-            if(scene.buildIndex == 3)
+            if (scene.buildIndex == 3)
             {
-                if(!done)
+                if (!done)
                 {
                     KME_LevelPlayer.InitGameTex();
                     SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
@@ -93,13 +94,13 @@ namespace KarlsonMP
             if (done) return;
             if (scene.name == "0Tutorial")
             {
-                KMP_Console.Log("Initializing prefabs.. Tutorial (1/2)");
+                KMP_Console.Log("[Bootstrap] Initializing prefabs.. Tutorial (1/2)");
                 KMP_PrefabManager.Init();
                 SceneManager.LoadScene("4Escape0", LoadSceneMode.Single);
             }
             if (scene.name == "4Escape0")
             {
-                KMP_Console.Log("Initializing prefabs.. Escape 0 (2/2)");
+                KMP_Console.Log("[Bootstrap] Initializing prefabs.. Escape 0 (2/2)");
                 KMP_PrefabManager.Init2();
                 SceneManager.LoadScene("1Sandbox0", LoadSceneMode.Single);
             }
@@ -161,50 +162,105 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(PlayerMovement), "Pause")]
     public class Hook_PlayerMovement_Pause
     {
-        public static bool Prefix() => false;
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            _ = instructions; // make compiler happy
+            return new[] { new CodeInstruction(System.Reflection.Emit.OpCodes.Ret) };
+        }
     }
-    [HarmonyPatch(typeof(Debug), "OpenConsole")]
-    [HarmonyPatch(typeof(Debug), "CloseConsole")]
-    public class Hook_Debug_Console
-    {
-        public static bool Prefix() => false;
-    }
+
     [HarmonyPatch(typeof(Debug), "Update")]
     public class Hook_Debug_Update
     {
-        public static void Postfix(Debug __instance)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // for some reason the console opens even though i disabled OpenConsole and CloseConsole via Harmony
-            if (__instance.console.gameObject.activeSelf)
-            {
-                __instance.console.gameObject.SetActive(false);
-                PlayerMovement.Instance.paused = false;
-            }
+            // keep only this.Fps() call
+            return instructions.Take(2).Append(new CodeInstruction(OpCodes.Ret));
         }
     }
 
     [HarmonyPatch(typeof(Timer), "Update")]
     public class Hook_Timer_Update
     {
-        // for some reason the timer sometimes remains active.
-        public static void Postfix(TextMeshProUGUI ___text)
+        public static void update(Timer instance)
         {
-            if(___text.gameObject.activeSelf)
-                ___text.gameObject.SetActive(false);
+            if (instance.text.gameObject.activeSelf)
+                instance.text.gameObject.SetActive(false);
+        }
+
+        // for some reason the timer sometimes remains active.
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            _ = instructions; // make compiler happy
+            var ret = generator.DefineLabel();
+            return new[]
+            {
+                // this.text.gameObject.activeSelf
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Timer), "text")),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Component), "get_gameObject")),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(GameObject), "get_activeSelf")),
+                new CodeInstruction(OpCodes.Brfalse_S, ret), // if not active self, return
+                // this.text.gameObject.SetActive(true)
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldfld, AccessTools.Field(typeof(Timer), "text")),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Component), "get_gameObject")),
+                new CodeInstruction(OpCodes.Ldc_I4_0), // false
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(GameObject), "SetActive")),
+                new CodeInstruction(OpCodes.Ret).WithLabels(ret)
+            };
         }
     }
 
     [HarmonyPatch(typeof(PlayerMovement), "Update")]
     public class Hook_PlayerMovement_Update
     {
-        public static bool Prefix() => !PlaytimeLogic.paused;
+        // check for suicide even if player is in pause menu
+        public static bool Prefix(PlayerMovement __instance)
+        {
+            if (!PlaytimeLogic.paused)
+                return true;
+            if (__instance.transform.position.y < -200f)
+                __instance.KillPlayer();
+            return false;
+        }
     }
     [HarmonyPatch(typeof(PlayerMovement), "KillPlayer")]
     public class Hook_PlayerMovement_KillPlayer
     {
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            _ = instructions; // make compiler happy
+            /**
+             * if(!PlaytimeLogic.suicided)
+             * {
+             *     ClientSend.Damage(NetworkManager.client.Id, 100); // suicide
+             *     PlaytimeLogic.suicided = true;
+             * }
+             */
+            var ret = generator.DefineLabel();
+            return new[]
+            {
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(PlaytimeLogic), "suicided")),
+                new CodeInstruction(OpCodes.Brtrue_S, ret), // if PlaytimeLogic.suicided -> ret
+
+                // NetworkManager.client.Id
+                new CodeInstruction(OpCodes.Ldsfld, AccessTools.Field(typeof(NetworkManager), "client")),
+                new CodeInstruction(OpCodes.Callvirt, AccessTools.Method(typeof(Client), "get_Id")),
+                // 100
+                new CodeInstruction(OpCodes.Ldc_I4_S, 100),
+                // ClientSend.Damage(NetworkManager.client.Id, 100)
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(ClientSend), "Damage")),
+                // PlaytimeLogic.suicided = true
+                new CodeInstruction(OpCodes.Ldc_I4_1),
+                new CodeInstruction(OpCodes.Stsfld, AccessTools.Field(typeof(PlaytimeLogic), "suicided")),
+
+                new CodeInstruction(OpCodes.Ret).WithLabels(ret)
+            };
+        }
         public static bool Prefix()
         {
-            if(!PlaytimeLogic.suicided)
+            if (!PlaytimeLogic.suicided)
             {
                 ClientSend.Damage(NetworkManager.client.Id, 100); // suicide
                 PlaytimeLogic.suicided = true;
@@ -213,6 +269,7 @@ namespace KarlsonMP
         }
     }
 
+    // these functions are not complete replacements, instead they are a toggle so we keep them as is
     [HarmonyPatch(typeof(PlayerMovement))]
     public static class CrouchFixes
     {
@@ -245,12 +302,12 @@ namespace KarlsonMP
 
         [HarmonyPatch("MyInput")]
         [HarmonyPostfix]
-        public static void MyInput(ref bool ___crouching)
+        public static void MyInput(PlayerMovement __instance)
         {
             if (!Enabled) return;
-            if (crouching && !___crouching) // desync between crouch action and state
-                PlayerMovement.Instance.StopCrouch();
-            ___crouching = crouching;
+            if (crouching && !__instance.crouching) // desync between crouch action and state
+                __instance.StopCrouch();
+            __instance.crouching = crouching;
         }
 
         public static bool IsCrouching()
@@ -263,13 +320,20 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(Milk), "Update")]
     public class Hook_Milk_Update
     {
-        public static bool Prefix(Milk __instance)
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
-            // unlink milk rotation from fps
-            float z = Mathf.PingPong(Time.time, 1f);
-            Vector3 axis = new Vector3(1f, 1f, z);
-            __instance.transform.Rotate(axis, Time.deltaTime * 200);
-            return false;
+            // replace base.transform.Rotate(axis, 0.5f)
+            //    with base.transform.Rotate(axis, Time.deltaTime * 200)
+            var codeInstructions = instructions.ToList();
+            codeInstructions.RemoveAt(12); // ldc.r4 0.5
+            codeInstructions.InsertRange(12, new[]
+            {
+                // Time.deltaTime * 200
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Time), "get_deltaTime")),
+                new CodeInstruction(OpCodes.Ldc_R4, 200.0f),
+                new CodeInstruction(OpCodes.Mul)
+            });
+            return codeInstructions;
         }
     }
 
@@ -277,6 +341,7 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(Peer), "FindMessageHandlers")]
     public class Hook_Peer_FindMessageHandlers
     {
+        // we keep this as prefix since it's only called once so there is no performance gain here
         public static bool Prefix(ref MethodInfo[] __result)
         {
             __result = Assembly.GetExecutingAssembly().GetTypes().SelectMany(x => x.GetMethods()).Where(m => m.GetCustomAttributes(typeof(MessageHandlerAttribute), false).Length > 0).ToArray();
@@ -287,15 +352,25 @@ namespace KarlsonMP
     [HarmonyPatch(typeof(Milk), "OnTriggerEnter")]
     public class Hook_Milk_OnTriggerEnter
     {
-        public static bool Prefix(Collider other, Milk __instance)
+        public static void fn(Milk instance, Collider other)
         {
-            if(other.gameObject.layer == LayerMask.NameToLayer("Player"))
+            if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
             {
-                var data = __instance.GetComponent<KMP_PropData>();
-                if (!data || !data.annouce) return false;
+                var data = instance.GetComponent<KMP_PropData>();
+                if (!data || !data.annouce) return;
                 ClientSend.Pickup(data.id);
             }
-            return false;
+        }
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            _ = instructions; // make compiler happy
+            return new[]
+            {
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldarg_1),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Hook_Milk_OnTriggerEnter), "fn")),
+                new CodeInstruction(OpCodes.Ret)
+            };
         }
     }
 }

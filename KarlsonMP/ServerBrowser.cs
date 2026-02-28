@@ -13,19 +13,29 @@ namespace KarlsonMP
     public static class ServerBrowser
     {
         static GameObject go;
+        static ServerBrowserBehaviour behaviour;
 
         public static void Start()
         {
             go = new GameObject("ServerBrowser");
-            go.AddComponent<ServerBrowserBehaviour>();
+            behaviour = go.AddComponent<ServerBrowserBehaviour>();
         }
         public static void Destroy()
         {
-            UnityEngine.Object.Destroy(go);
-            if (ServerBrowserBehaviour.QueryClient != null)
+            if (go) UnityEngine.Object.Destroy(go);
+            go = null;
+            ServerBrowserBehaviour.QueryClient?.Disconnect();
+            ServerBrowserBehaviour.QueryClient = null;
+        }
+        public static void Connect(string ip)
+        {
+            if (go)
+                behaviour.Connect(ip);
+            else
             {
-                ServerBrowserBehaviour.QueryClient.Disconnect();
-                ServerBrowserBehaviour.QueryClient = null;
+                var browser = new ServerBrowserBehaviour();
+                browser.LoadPrefs();
+                browser.Connect(ip);
             }
         }
     }
@@ -47,10 +57,13 @@ namespace KarlsonMP
             listAlt.SetPixel(0, 0, new Color(15f / 255f, 11f / 255f, 12f / 255f));
             listAlt.Apply();
 
-            // load user prefs
+            LoadPrefs();
+        }
+        public void LoadPrefs()
+        {
             if (File.Exists(Path.Combine(Loader.KMP_ROOT, "prefs")))
             {
-                using(BinaryReader br = new BinaryReader(File.OpenRead(Path.Combine(Loader.KMP_ROOT, "prefs"))))
+                using (BinaryReader br = new BinaryReader(File.OpenRead(Path.Combine(Loader.KMP_ROOT, "prefs"))))
                 {
                     userName = br.ReadString();
                     ushort x = br.ReadUInt16();
@@ -74,6 +87,30 @@ namespace KarlsonMP
                 bw.Write((ushort)recent.Count);
                 foreach (var x in recent)
                     bw.Write(x);
+            }
+        }
+
+        public void Connect(string ip)
+        {
+            PlaytimeLogic.Disconnect();
+            if (!ip.Contains(':'))
+                ip += ":11337";
+            // add server to recent
+            if (recent.Contains(ip))
+                recent.Remove(ip);
+            recent.Insert(0, ip);
+            SavePrefs();
+            ServerBrowser.Destroy();
+            // resolve server name
+            try
+            {
+                string hostname = ip.Split(':')[0];
+                NetworkManager.Connect(Loader.ToIPAddress(hostname).ToString() + ':' + ip.Split(':')[1], userName);
+            }
+            catch (Exception ex)
+            {
+                KMP_Console.Log($"[ServerBrowser] Failed to connect to '{ip}': " + ex.ToString());
+                PlaytimeLogic.DisconnectToBrowser();
             }
         }
 
@@ -112,10 +149,10 @@ namespace KarlsonMP
         {
             str = str.Trim();
             // we allow at most one '\n' and all tags except <size>
-            if(str.Contains("\n"))
+            if (str.Contains("\n"))
             {
                 int idx = str.IndexOf("\n");
-                if(str.Substring(idx + 1).Contains("\n"))
+                if (str.Substring(idx + 1).Contains("\n"))
                     str = str.Substring(0, idx) + "\n" + str.Substring(idx + 1).Replace("\n", " ");
             }
             return str.Replace("<size", "<<i></i>size").Replace("</size", "<<i></i>/size");
@@ -151,7 +188,7 @@ namespace KarlsonMP
 
         public void OnGUI()
         {
-            if(vAlign == null)
+            if (vAlign == null)
             {
                 vAlign = new GUIStyle(GUI.skin.label);
                 vAlign.alignment = TextAnchor.MiddleLeft;
@@ -167,7 +204,7 @@ namespace KarlsonMP
             GUI.Label(new Rect(360, 5, 100, 20), "Username");
             userName = GUI.TextField(new Rect(425, 5, 150, 20), userName);
             if (GUI.Button(new Rect(Screen.width - 75, 5, 70, 20), "Exit")) Application.Quit();
-            if(tab == 0)
+            if (tab == 0)
             {
                 if (GUI.Button(new Rect(Screen.width - 230, 5, 150, 20), "Add Server"))
                 {
@@ -180,18 +217,18 @@ namespace KarlsonMP
                 {
                     GUI.Label(new Rect(5, 20, 300, 20), "Enter server IP:");
                     sbAddr = GUI.TextArea(new Rect(5, 40, 290, 20), sbAddr);
-                    if(sbAddr.Contains('\n') || GUI.Button(new Rect(10, 65, 135, 20), "Add Server"))
+                    if (sbAddr.Contains('\n') || GUI.Button(new Rect(10, 65, 135, 20), "Add Server"))
                     {
                         sbAddr = sbAddr.Replace("\n", "");
                         if (!sbAddr.Contains(':'))
                             sbAddr += ":11337";
-                        if(favorites.Contains(sbAddr))
+                        if (favorites.Contains(sbAddr))
                             favorites.Remove(sbAddr); // move server to top of list
                         favorites.Insert(0, sbAddr);
                         addServer = false;
                         SavePrefs();
                     }
-                    if(GUI.Button(new Rect(155, 65, 135, 20), "Cancel"))
+                    if (GUI.Button(new Rect(155, 65, 135, 20), "Cancel"))
                         addServer = false;
                 }, "Add server to favorites");
             // draw server list
@@ -216,12 +253,12 @@ namespace KarlsonMP
             {
                 bool altTx = false;
                 int i = 0;
-                foreach(var x in serverList)
+                foreach (var x in serverList)
                 {
                     GUI.DrawTextureWithTexCoords(new Rect(0, 50 * i, Screen.width, 50), altTx ? listAlt : listTx, new Rect(0, 0, 1, 1));
-                    if(!ServerQueryCache.ContainsKey(x))
+                    if (!ServerQueryCache.ContainsKey(x))
                     {
-                        if(QueryServerAddr == x)
+                        if (QueryServerAddr == x)
                             GUI.Label(new Rect(5, 50 * i, 350, 50), x + " | <color=yellow>Pinging server...</color>", vAlign);
                         else
                         {
@@ -246,30 +283,20 @@ namespace KarlsonMP
                 }
             }
             GUI.EndScrollView();
-            if(selectedServer != "")
+            if (selectedServer != "")
             {
-                if(ServerQueryCache.ContainsKey(selectedServer))
+                if (ServerQueryCache.ContainsKey(selectedServer))
                     GUI.Label(new Rect(5, Screen.height - 30, 350, 20), ServerQueryCache[selectedServer].Item1);
                 else
                     GUI.Label(new Rect(5, Screen.height - 30, 350, 20), selectedServer);
                 if (GUI.Button(new Rect(300, Screen.height - 30, 100, 20), "Connect"))
-                {
-                    // add server to recent
-                    if (recent.Contains(selectedServer))
-                        recent.Remove(selectedServer);
-                    recent.Insert(0, selectedServer);
-                    SavePrefs();
-                    // resolve server name
-                    string hostname = selectedServer.Split(':')[0];
-                    NetworkManager.Connect(Loader.ToIPAddress(hostname).ToString() + ':' + selectedServer.Split(':')[1], userName);
-                    ServerBrowser.Destroy();
-                }
-                if(favorites.Contains(selectedServer) && GUI.Button(new Rect(405, Screen.height - 30, 175, 20), "Remove from Favorites"))
+                    Connect(selectedServer);
+                if (favorites.Contains(selectedServer) && GUI.Button(new Rect(405, Screen.height - 30, 175, 20), "Remove from Favorites"))
                 {
                     favorites.Remove(selectedServer);
                     SavePrefs();
                 }
-                if(!favorites.Contains(selectedServer) && GUI.Button(new Rect(405, Screen.height - 30, 175, 20), "Add to Favorites"))
+                if (!favorites.Contains(selectedServer) && GUI.Button(new Rect(405, Screen.height - 30, 175, 20), "Add to Favorites"))
                 {
                     favorites.Add(selectedServer);
                     SavePrefs();

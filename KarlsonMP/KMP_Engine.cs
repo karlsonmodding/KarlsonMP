@@ -33,7 +33,7 @@ namespace KarlsonMP
 
         public static KObject Interpolate(KObject objPrev, KObject objNow, float tickTime)
         {
-            if(objPrev == null || objNow == null) return null;
+            if (objPrev == null || objNow == null) return null;
             // interpolate between objPrev and objNow, where tickTime is 0..1 and represents the between-tick time
             // for extrapolation tickTime can be greater than 1, and the formula still works
             /*
@@ -180,7 +180,7 @@ namespace KarlsonMP
                 if (nextTick.Tick - RenderTick > KEngine.cl_extrapolate)
                 {
                     // warn player that we exceeded cl_extrapolate threshold
-                    KillFeedGUI.AddText($"<color=red>Bad network.\nExtrapolating more than {KEngine.cl_extrapolate} ticks.</color>");
+                    KillFeedGUI.pin = new KillFeedGUI._feedItem($"<color=red>Bad network.\nExtrapolating more than {KEngine.cl_extrapolate} ticks.</color>") { state = 25 }; // state 25 avoid fade-in
                 }
             }
             // nice math btw
@@ -212,7 +212,13 @@ namespace KarlsonMP
 
         public static void RegisterFrame(KTick ktick)
         {
-            ticks.Add(ktick);
+            // if we already have this tick in memory merge the objects
+            var candidate = ticks.FirstOrDefault(x => x.Tick == ktick.Tick);
+            if (candidate != null) // we assume the server sends correct split ticks and doesn't duplicate objects
+                                   // or if it does duplicate them, they have the same data so we don't care
+                candidate.objects.AddRange(ktick.objects);
+            else
+                ticks.Add(ktick);
             if (ticks.Count > 200)
                 ticks.RemoveRange(0, ticks.Count - 200); // only keep 200 snapshots in memory
         }
